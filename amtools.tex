@@ -1,0 +1,281 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+
+\usepackage{verbatim}
+\usepackage{xspace}
+\newcommand{\FC}       {Freechains\xspace}
+\newcommand{\reps}     {\emph{reps}\xspace}
+\newcommand{\onerep}   {\emph{1~rep}\xspace}
+\newcommand{\nreps}[1] {\emph{#1~reps\xspace}}
+\newcommand{\code}[1]  {\texttt{\footnotesize{#1}}}
+\newcommand{\Xon} {$1{\rightarrow}N$\xspace}
+\newcommand{\Xno} {$1{\leftarrow}N$\xspace}
+\newcommand{\Xnn} {$N{\leftrightarrow}N$\xspace}
+\newcommand{\Xoo} {$1{\leftrightarrow}1$\xspace}
+\newcommand{\Xo}  {$1{\hookleftarrow}$\xspace}
+
+\renewcommand{\theenumi}{\alph{enumi}}
+
+\hyphenation{off-line}
+
+\sloppy
+
+\title{
+    \emph{AM-Tools} - Operating Permissionless P2P JSON Datasets
+}
+
+\author{Anonymous}
+\address{Anonymous}
+
+\begin{document}
+
+\begin{comment}
+- Descrição e motivação do problema resolvido pela ferramenta;
+- Arquitetura da solução e descrição das principais funcionalidades;
+- Descrição da demonstração planejada para o Salão de Ferramentas, informando equipamentos necessários para tal;
+- URL onde a ferramenta está disponível (obrigatório na modalidade Código Aberto);
+- URL dos manuais e documentação da ferramenta, incluindo informações e requisitos para instalação (obrigatório na modalidade Código Aberto);
+- URL com um vídeo explicando a instalação e as funcionalidades da ferramenta (obrigatório na modalidade Código Fechado e opcional na modalidade Código Aberto).
+\end{comment}
+
+\maketitle
+
+\begin{abstract}
+Networked collaborative applications, such as Google Docs and Github, allow
+users to work together concurrently.
+These applications rely on distributed datasets that represent documents, code,
+and other data, which users expect to see and share in a consistent way.
+However, most practical collaborative systems rely on centralized authorities
+to ensure data consistency and correctness.
+%
+In this work, we propose a set of tools to read and write JSON datasets in a
+permissionless P2P environment, in which users participate in a consensus
+mechanism to ensure consistency and correctness.
+%
+\emph{AM-Tools} reconcile Automerge, a JSON-based conflict-free replicated data
+type, with Freechains, a permissionless blockchain with a reputation mechanism
+to moderate content and prevent abuse.
+%
+\emph{AM-Tools} resembles a distributed version control system (DVCS), but with
+a consensus mechanism to merge conflicting editions while preserving data
+correctness.
+\end{abstract}
+
+\section{Introduction}
+\label{sec.introduction}
+
+Networked collaborative applications allow remote users to share projects while
+working together concurrently \cite{wu2010partial}.
+Examples of collaborative applications include Google
+Docs~\cite{attebury2008google}, Github~\cite{preston2008github} and
+Wikipedia~\cite{wikipedia2004wikipedia}.
+%
+These applications rely on distributed datasets that are read, written, stored,
+and synchronized through the network.
+By datasets, we mean any kind of data structures that can represent documents,
+code, or social media feeds, as found in collaborative applications.
+Users expect to see and share these datasets in a consistent way, even if their
+machines synchronize sporadically and at different times.
+%
+In this work, we use generic JSON files to represent datasets, given that they
+are human readable and widely adopted as an interchange format.
+
+Currently, most practical collaborative systems rely on centralized authorities
+to ensure data consistency and correctness.
+However, centralized authorities concentrate too much power, since they control
+data ownership and service availability~\cite{pincheira2022decentralized}.
+As an emerging alternative, P2P systems~\cite{androutsellis2004survey} aim to
+decentralize control, such that applications grow organically with new
+users~\cite{rodrigues2010peer}, who contribute with storage, availability, and
+also, in our context, with moderation of the datasets.
+
+However, P2P systems strive to ensure data consistency and correctness,
+particularly in the presence of malicious users or
+Sybils~\cite{douceur2002sybil}.
+For instance, malicious users may abuse the system by vandalizing datasets with
+SPAM or hate speech.
+By consistency, we mean that all replicas reach the same state, while by
+correctness, we mean that such consistent state must also be immune to
+vandalism (integrity) and preserve the users intent
+(accuracy)~\cite{litt2022peritext}.
+Integrity and accuracy inevitably depend on the subjective judgement of users,
+which we refer as \emph{subjective correctness}.
+
+As a solution to preserve consistency and accuracy is to rely on conflict-free
+replicated data types (CRDTs)~\cite{shapiro2011conflict}.
+As an example, Automerge~\cite{kleppmann2018automerge} provides JSON data
+structures as CRDTs, such that they can be read and written concurrently
+without conflicts.
+Nevertheless, CRDTs are still subject to corner cases, such as simultaneous
+editions of the very same part of documents.
+In addition, CRDTs are not themselves immune to malicious users and Sybils,
+which might vandalize datasets with no restrictions.
+In such cases, a consensus mechanism might still be necessary to preserve data
+integrity.
+
+As a partial solution to preserve integrity, permissioned P2P systems opt for a
+centralized authority to grant membership to new users.
+Examples of permissioned P2P networks include Ripple~\cite{schwartz2014ripple}
+and Hyperledger Fabric~\cite{androulaki2018hyperledger}.
+%
+Nevertheless, our goal is for a permissionless environment that requires no
+centralized membership authority, preserving the organic growth of traditional
+P2P systems.
+
+In a permissionless context, a major challenge is to support concurrent data
+edition and moderation, such that users share consistent and correct datasets
+even in the presence of Sybils.
+%
+Bitcoin~\cite{nakamoto2008bitcoin} is a Sybil-resistant permissionless protocol
+because it is expensive to write to its unique timeline (either via
+proof-of-work or transaction fees).
+However, Bitcoin and cryptocurrencies in general provide no subjective means to
+moderate conflicts in collaborative datasets, but instead rely on tokens for
+arbitrate conflicts.
+%
+As an alternative targeting collaborative applications,
+Freechains~\cite{sant2020freechains} resists Sybils through a reputation
+mechanism that moderates content through likes and dislikes and, at the same
+time, delivers network consensus.
+However, unlike CRDTs, Freechains does not support structured datasets with
+attached semantics, since it represents content as a simple linked list of
+binary blobs stored in individual ``chains'', which each application must
+interpret appropriately.
+
+In this work, we propose \emph{AM-Tools}, a set of tools that reconciles
+Automerge and Freechains, extending JSON CRDTs with a consensus mechanism that
+can handle consistency corner cases and also moderate malicious editions:
+Automerge editions are ordered by the Freechains consensus mechanism providing
+a priority to resolve conflicts, thus preserving accuracy.
+In addition, further moderation can revert priorities or even remove abusive or
+malicious editions, thus preserving integrity.
+%
+A dataset is structured as Automerge JSON file stored on Freechains.
+Each file is a separate blockchain that stores a list of modifications to the
+JSON.
+The list is traversed from the beginning in consensus order to recreate the
+file as a complete JSON.
+%
+In this sense \emph{AM-Tools} resembles a distributed version control system
+(DVCS), but with a consensus mechanism to merge conflicting editions while
+preserving data correctness.
+
+\emph{AM-Tools} is composed of 4 utilities: \texttt{AM-rw}, \texttt{AM-diff},
+\texttt{AM-patch}, and \texttt{AM-freechains}.
+%
+\texttt{AM-rw} allows to read and write portions of a JSON file.
+\texttt{AM-diff} obtains the differences between two JSON files.
+\texttt{AM-patch} applies differences to a JSON file.
+\texttt{AM-freechains} commits and checkouts a JSON file to its corresponding
+blockchain.
+
+The rest of this paper is organized as follows.
+Section~\ref{sec.both} describes the basic functionality of Automerge and
+Freechains as separate tools.
+Section~\ref{sec.amtools} describes \emph{AM-Tools} and how it combines
+Automerge and Freechains.
+
+\section{Automerge and Freechains}
+\label{sec.both}
+
+This section describes the basic functionality of Automerge and Freechains in
+separate.
+
+\subsection{Automerge}
+
+Automerge~\cite{kleppmann2018automerge} is an open-source library that provides
+CRDT-based JSON datasets to build collaborative applications.
+%
+Automerge is designed for \emph{local-first software}~\cite{TODO} which, unlike
+cloud-based software, stores and operates the datasets locally, such that
+applications can work normally while offline.
+%
+Therefore, users can make concurrent changes to a shared JSON without
+centralized coordination:
+When users synchronize, Automerge ensures that changes are merged automatically
+in a principled manner.
+%
+More specifically, Automerge is an operation-based CRDT (CmRDT~\cite{TODO})
+that models JSON datasets as append-only logs of concurrent commutative
+modifications, such as the insertion or removal of list
+elements~\cite{kleppmann2017conflict}.
+%
+When users synchronize, these logs are merged to reach the exactly same state
+according to the eventual consistency model~\cite{TODO}.
+
+%This is the main reason why concurrent changes are inevitable, and why CRDTs
+
+The basic JavaScript API of Automerge is as follows:
+
+\begin{itemize}
+\item \texttt{obj = Automerge.init()}: \\
+    Initializes a JSON as an empty object \texttt{obj=\{\}}.
+\item \texttt{obj2 = Automerge.change(obj1, f)}: \\
+    Modifies object \texttt{obj1} through function \texttt{f}, resulting in
+    object \texttt{obj2}.
+\item \texttt{chg = Automerge.getChanges(obj1, obj2)}: \\
+    Compares objects \texttt{obj1} and \texttt{obj2}, resulting in changes
+    \texttt{chg}.
+\item \texttt{obj2 = Automerge.applyChanges(obj1, chg)} \\
+    Applies changes \texttt{chg} to object \texttt{obj1}, resulting in object
+    \texttt{obj2}.
+\item \texttt{bin = Automerge.save(obj)} \\
+    Converts object \texttt{obj} to a byte array \texttt{bin}.
+\item \texttt{obj = Automerge.load(bin)} \\
+    Converts a byte array \texttt{bin} to object \texttt{obj}.
+\end{itemize}
+
+Note that the basic API of Automerge is network agnostic, and does not provide
+mechanisms to synchronize objects, requiring extra libraries.
+
+The API usage is straightforward:
+    initialize a dataset,
+    make local changes,
+    synchronize with other users (extra),
+    apply changes,
+    persist locally.
+Except for function \texttt{change}, the other functions are straightforward.
+%
+Because Automerge is a CmRDT and must keep track of all operations, JSON
+objects cannot be manipulated directly in JavaScript.
+Instead, \texttt{Automerge.change} receives a function argument that is allowed
+to manipulate the given object with tracking enabled.
+
+The next example...
+
+
+modified
+all changes be tracked and JSON
+
+must go through a
+
+
+The next example
+
+In addition to consistency, Automerge also ensures accuracy, but not integrity
+Nevertheless, CRDTs are still subject to corner cases, such as simultaneous
+editions of the very same part of documents.
+In addition, CRDTs are not themselves immune to malicious users and Sybils,
+which might vandalize datasets with no restrictions.
+In such cases, a consensus mechanism might still be necessary to preserve data
+integrity.
+
+, and
+
+As became clear from ..., although Automerge goal remote sync,
+- local first
+- newtwork-agnostic
+- means to share updates consistently
+- cmrdt, no dups
+- enters freechains
+
+
+\subsection{Freechains}
+
+%\bibliographystyle{abbrv}
+%\bibliography{freechains}
+
+\end{document}
