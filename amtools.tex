@@ -33,6 +33,7 @@
 \begin{document}
 
 \begin{comment}
+- 8 paginas
 - Descrição e motivação do problema resolvido pela ferramenta;
 - Arquitetura da solução e descrição das principais funcionalidades;
 - Descrição da demonstração planejada para o Salão de Ferramentas, informando equipamentos necessários para tal;
@@ -163,13 +164,13 @@ In this sense \emph{AM-Tools} resembles a distributed version control system
 (DVCS), but with a consensus mechanism to merge conflicting editions while
 preserving data correctness.
 
-\emph{AM-Tools} is composed of 4 utilities: \texttt{AM-rw}, \texttt{AM-diff},
-\texttt{AM-patch}, and \texttt{AM-freechains}.
+\emph{AM-Tools} is composed of 4 utilities: \code{AM-rw}, \code{AM-diff},
+\code{AM-patch}, and \code{AM-freechains}.
 %
-\texttt{AM-rw} allows to read and write portions of a JSON file.
-\texttt{AM-diff} obtains the differences between two JSON files.
-\texttt{AM-patch} applies differences to a JSON file.
-\texttt{AM-freechains} commits and checkouts a JSON file to its corresponding
+\code{AM-rw} allows to read and write portions of a JSON file.
+\code{AM-diff} obtains the differences between two JSON files.
+\code{AM-patch} applies differences to a JSON file.
+\code{AM-freechains} commits and checkouts a JSON file to its corresponding
 blockchain.
 
 The rest of this paper is organized as follows.
@@ -211,40 +212,104 @@ according to the eventual consistency model~\cite{TODO}.
 The basic JavaScript API of Automerge is as follows:
 
 \begin{itemize}
-\item \texttt{obj = Automerge.init()}: \\
-    Initializes a JSON as an empty object \texttt{obj=\{\}}.
-\item \texttt{obj2 = Automerge.change(obj1, f)}: \\
-    Modifies object \texttt{obj1} through function \texttt{f}, resulting in
-    object \texttt{obj2}.
-\item \texttt{chg = Automerge.getChanges(obj1, obj2)}: \\
-    Compares objects \texttt{obj1} and \texttt{obj2}, resulting in changes
-    \texttt{chg}.
-\item \texttt{obj2 = Automerge.applyChanges(obj1, chg)} \\
-    Applies changes \texttt{chg} to object \texttt{obj1}, resulting in object
-    \texttt{obj2}.
-\item \texttt{bin = Automerge.save(obj)} \\
-    Converts object \texttt{obj} to a byte array \texttt{bin}.
-\item \texttt{obj = Automerge.load(bin)} \\
-    Converts a byte array \texttt{bin} to object \texttt{obj}.
+\item \code{obj = AM.init()}: \\
+    Initializes a JSON as an empty object \code{obj=\{\}}.
+\item \code{obj2 = AM.change(obj1, f)}: \\
+    Modifies object \code{obj1} through function \code{f}, resulting in
+    object \code{obj2}.
+\item \code{chgs = AM.getChanges(obj1, obj2)}: \\
+    Compares objects \code{obj1} and \code{obj2}, resulting in changes
+    \code{chgs}.
+\item \code{obj2 = AM.applyChanges(obj1, chgs)} \\
+    Applies changes \code{chgs} to object \code{obj1}, resulting in object
+    \code{obj2}.
+\item \code{bin = AM.save(obj)} \\
+    Converts object \code{obj} to a byte array \code{bin}.
+\item \code{obj = AM.load(bin)} \\
+    Converts a byte array \code{bin} to object \code{obj}.
 \end{itemize}
 
 Note that the basic API of Automerge is network agnostic, and does not provide
 mechanisms to synchronize objects, requiring extra libraries.
 
 The API usage is straightforward:
-    initialize a dataset,
-    make local changes,
+    initialize a dataset with \code{init},
+    make local changes with \code{change} and \code{getChanges},
     synchronize with other users (extra),
-    apply changes,
-    persist locally.
-Except for function \texttt{change}, the other functions are straightforward.
+    apply remote changes with \code{applyChanges},
+    persist locally with \code{save} and \code{load}.
+Except for function \code{change}, the other functions are straightforward.
 %
 Because Automerge is a CmRDT and must keep track of all operations, JSON
 objects cannot be manipulated directly in JavaScript.
-Instead, \texttt{Automerge.change} receives a function argument that is allowed
-to manipulate the given object with tracking enabled.
+Instead, \code{AM.change} receives a function argument to manipulate
+the given object with tracking enabled.
 
-The next example...
+The next example simulates two peers \code{A} and \code{B} manipulating a
+JSON concurrently to reach the final state \code{\{ list: ['A','B']\}}:
+
+\noindent
+{\footnotesize
+\begin{minipage}[t]{0.6\textwidth}
+\begin{verbatim}
+// PEER A
+A1 = AM.init()
+A2 = AM.change(A1, json => {
+    json.list = []
+})
+
+X0 = AM.getChanges(A1,A2)   --sync-X0-->
+
+A3 = AM.change(A2, json => {
+    json.list.push('A')
+})
+
+XA = AM.getChanges(A2,A3)   <--XB--XA-->
+A4 = AM.applyChanges(A3, XB)
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{0.4\textwidth}
+\begin{verbatim}
+// PEER B
+B1 = AM.init()
+
+
+
+
+B2 = AM.applyChanges(B1, X0)
+
+B3 = AM.change(B2, json => {
+    json.list.push('B')
+})
+
+XB = AM.getChanges(A2,A3)
+B4 = AM.applyChanges(B3, XA)
+\end{verbatim}
+\end{minipage}
+}
+
+Peers \code{A} and \code{B} initialize a new JSON independently.
+Then, peer \code{A} adds an empty list, calculates the difference to \code{X0},
+and synchronizes it with peer \code{B}.
+Then, both peers push values to the list concurrently, and synchronizes the
+differences \code{XA} and \code{XB}, which are applied in the other sides.
+Automerge ensures that the final states \code{A4} and \code{B4} are exactly the
+same, with the list containing the values \code{'A'} and \code{'B'} in the
+same order.
+
+However, note
+
+
+with values \code{
+The final state is a JSONlistAt the end, the listThe final result i\code{\{ list: ['A','B']\}}
+
+
+
+Automerge ensures that the final result 
+
+  creates 
+
+The example 
 
 
 modified
