@@ -229,16 +229,16 @@ The basic JavaScript API of Automerge is as follows:
     Converts a byte array \code{bin} to object \code{obj}.
 \end{itemize}
 
-Note that the basic API of Automerge is network agnostic, and does not provide
-mechanisms to synchronize objects, requiring extra libraries.
+Note that the basic API of Automerge is network agnostic and does not provide
+a mechanism to synchronize objects, requiring extra libraries for this purpose.
 
 The API usage is straightforward:
-    initialize a dataset with \code{init},
-    make local changes with \code{change} and \code{getChanges},
+    initialize a dataset with \code{AM.init},
+    make local changes with \code{AM.change} and \code{AM.getChanges},
     synchronize with other users (extra),
-    apply remote changes with \code{applyChanges},
-    persist locally with \code{save} and \code{load}.
-Except for function \code{change}, the other functions are straightforward.
+    apply remote changes with \code{AM.applyChanges},
+    persist locally with \code{AM.save} and \code{AM.load}.
+Except for function \code{AM.change}, the other functions are straightforward.
 %
 Because Automerge is a CmRDT and must keep track of all operations, JSON
 objects cannot be manipulated directly in JavaScript.
@@ -288,55 +288,38 @@ B4 = AM.applyChanges(B3, XA)
 \end{minipage}
 }
 
-Peers \code{A} and \code{B} initialize a new JSON independently.
-Then, peer \code{A} adds an empty list, calculates the difference to \code{X0},
-and synchronizes it with peer \code{B}.
-Then, both peers push values to the list concurrently, and synchronizes the
-differences \code{XA} and \code{XB}, which are applied in the other sides.
+Peers \code{A} and \code{B} initialize a new JSON independently (\code{A1} and
+\code{B1}).
+Then, peer \code{A} adds an empty list (\code{A2}), computes the difference
+(\code{X0}), and synchronizes it with peer \code{B} (\code{B2}).
+Then, both peers push values to the list concurrently (\code{A3} and
+\code{B3}), and synchronizes the differences (\code{XA} and \code{XB}), which
+are applied in the other sides (\code{A4} and \code{B4}).
 Automerge ensures that the final states \code{A4} and \code{B4} are exactly the
-same, with the list containing the values \code{'A'} and \code{'B'} in the
-same order.
+same, with the list containing both values \code{'A'} and \code{'B'}.
+However, since the editions are concurrent, the final list may become either
+\code{['A','B']} or \code{['B','A']}, depending on arbitrary criteria such as
+peer identity or timestamp.
+Nevertheless, regardless of the order, the users intent to push two values into
+the list is preserved.
 
-However, note
+Now, consider that instead of calls to \code{json.list.push}, the peers set the
+lists directly as \code{json.list=['A']} and \code{json.list=['B']}.
+In this case, the concurrent assignments are incompatible, and an
+irreconcilable conflict occurs.
+Nevertheless, Automerge arbitrarily chooses one of the assignments, but still
+detects and indicates the conflict through the API \code{AM.getConflicts}.
+Note that for such corner cases, Automerge does not preserve accuracy, since
+the intent of one of the users is not satisfied.
 
-
-with values \code{
-The final state is a JSONlistAt the end, the listThe final result i\code{\{ list: ['A','B']\}}
-
-
-
-Automerge ensures that the final result 
-
-  creates 
-
-The example 
-
-
-modified
-all changes be tracked and JSON
-
-must go through a
-
-
-The next example
-
-In addition to consistency, Automerge also ensures accuracy, but not integrity
-Nevertheless, CRDTs are still subject to corner cases, such as simultaneous
-editions of the very same part of documents.
-In addition, CRDTs are not themselves immune to malicious users and Sybils,
-which might vandalize datasets with no restrictions.
-In such cases, a consensus mechanism might still be necessary to preserve data
-integrity.
-
-, and
-
-As became clear from ..., although Automerge goal remote sync,
-- local first
-- newtwork-agnostic
-- means to share updates consistently
-- cmrdt, no dups
-- enters freechains
-
+In addition, since Automerge does not rule over peer synchronization, it cannot
+enforce data integrity either.
+For instance, a priori, nothing stops malicious users from vandalizing the
+datasets with SPAM or erroneous information.
+%
+Therefore, even though Automerge provides a solid foundation for
+eventually-consistency JSON datasets, it still cannot ensure integrity and
+accuracy for all cases.
 
 \subsection{Freechains}
 
