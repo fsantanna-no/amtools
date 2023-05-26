@@ -207,8 +207,6 @@ elements~\cite{kleppmann2017conflict}.
 When users synchronize, these logs are merged to reach the exactly same state
 according to the eventual consistency model~\cite{TODO}.
 
-%This is the main reason why concurrent changes are inevitable, and why CRDTs
-
 The basic JavaScript API of Automerge is as follows:
 
 \begin{itemize}
@@ -246,7 +244,7 @@ Instead, \code{AM.change} receives a function argument to manipulate
 the given object with tracking enabled.
 
 The next example simulates two peers \code{A} and \code{B} manipulating a
-JSON concurrently to reach the final state \code{\{ list: ['A','B']\}}:
+JSON concurrently to reach the final state \code{\{list: ['A','B']\}}:
 
 \noindent
 {\footnotesize
@@ -318,10 +316,110 @@ For instance, a priori, nothing stops malicious users from vandalizing the
 datasets with SPAM or erroneous information.
 %
 Therefore, even though Automerge provides a solid foundation for
-eventually-consistency JSON datasets, it still cannot ensure integrity and
-accuracy for all cases.
+eventually-consistency JSON datasets, it cannot ensure integrity and accuracy
+in all cases, specially in a permissionless environment.
 
 \subsection{Freechains}
+
+Freechains~\cite{TODO} is a permissionless P2P protocol to disseminate content
+in which all users observe the same total order of messages through a consensus
+mechanism.
+%
+Users post messages to a topic or chain (which behaves as an independent
+blockchain), and other users subscribed to the same chain eventually receive
+the messages.
+%
+Freechains introduces a reputation mechanism that moderates content through
+likes and dislikes and, at the same time, delivers network consensus.
+
+The basic command-line API of Freechains is as follows:
+
+\begin{itemize}
+\item \code{fc keys ...}: \\
+    Creates cryptographic keys as user identities.
+\item \code{fc chains join ...}: \\
+    Joins a chain to post and read content.
+\item \code{fc chain post ...}: \\
+    Posts a message to a chain.
+\item \code{fc chain get ...}: \\
+    Reads a post from a chain.
+\item \code{fc chain consensus ...}: \\
+    Shows all posts from a chain in consensus order.
+\item \code{fc peer sync ...}: \\
+    Synchronizes a chain with a remote peer.
+\end{itemize}
+
+Except for \code{fc~peer~sync}, none of the commands connect to the network,
+but only modify the local replica.
+%
+Users need to call \code{fc~keys} only once to create a public-private key pair
+as an identity to operate in the chains.
+%
+For each chain of interest, users need to call \code{fc~chains~join} with the
+same arguments such that they are compatible when synchronizing.
+%
+Once a chain is created, users can call \code{fc~chain~get} and
+\code{fc~chain~post} to read and write messages.
+%
+A chain can be traversed in order through \code{fc~chain~consensus}, which
+enumerates all post ids, which can be read through \code{fc~chain~get}.
+%
+Finally, \code{fc~peer~sync} exchanges missing posts between replicas.
+
+Freechains is also designed for \emph{local-first software}~\cite{TODO}, given
+that most commands only modify the local replica.
+For this reason, concurrent posts are not only encouraged, but are also
+inevitable.
+
+The next example simulates two users \code{A} and \code{B} posting concurrently
+to a chain:
+
+\noindent
+{\footnotesize
+\begin{minipage}[t]{0.6\textwidth}
+\begin{verbatim}
+// USER A
+$ fc keys pubpvt 'passwd-A'
+<pubkey-A> <pvtkey-A>
+
+$ fc chains 'my-topic' <pubkey-A>
+A2 = AM.change(A1, json => {
+    json.list = []
+})
+
+X0 = AM.getChanges(A1,A2)   --sync-X0-->
+
+A3 = AM.change(A2, json => {
+    json.list.push('A')
+})
+
+XA = AM.getChanges(A2,A3)   <--XB--XA-->
+A4 = AM.applyChanges(A3, XB)
+\end{verbatim}
+\end{minipage}
+\begin{minipage}[t]{0.4\textwidth}
+\begin{verbatim}
+// PEER B
+B1 = AM.init()
+
+
+
+
+B2 = AM.applyChanges(B1, X0)
+
+B3 = AM.change(B2, json => {
+    json.list.push('B')
+})
+
+XB = AM.getChanges(A2,A3)
+B4 = AM.applyChanges(B3, XA)
+\end{verbatim}
+\end{minipage}
+}
+
+However, Freechains does not support structured datasets with attached semantics, since
+it represents content as a simple linked list of binary blobs stored in individual “chains”,
+which each application must interpret appropriately.
 
 %\bibliographystyle{abbrv}
 %\bibliography{freechains}
