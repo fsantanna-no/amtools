@@ -370,9 +370,8 @@ Freechains is also designed for \emph{local-first software}~\cite{TODO}, given
 that most commands only modify the local replica.
 For this reason, concurrent posts are not only encouraged, but are also
 inevitable.
-
 The next example simulates two users \code{A} and \code{B} posting concurrently
-to a chain:
+to chain \code{#p2p}:
 
 \noindent
 {\footnotesize
@@ -381,41 +380,64 @@ to a chain:
 // USER A
 $ fc keys pubpvt 'passwd-A'
 <pubkey-A> <pvtkey-A>
-
-$ fc chains 'my-topic' <pubkey-A>
-A2 = AM.change(A1, json => {
-    json.list = []
-})
-
-X0 = AM.getChanges(A1,A2)   --sync-X0-->
-
-A3 = AM.change(A2, json => {
-    json.list.push('A')
-})
-
-XA = AM.getChanges(A2,A3)   <--XB--XA-->
-A4 = AM.applyChanges(A3, XB)
+$ fc chains join '#p2p' <pubkey-A> <pubkey-A> <pubkey-B>
+$ fc chain '#p2p' post inline "A" --sign=<pvtkey-A>
+$ fc peer <ip-B> sync '#p2p'
+$ fc chain '#p2p' consensus
+A --> B
 \end{verbatim}
 \end{minipage}
 \begin{minipage}[t]{0.4\textwidth}
 \begin{verbatim}
-// PEER B
-B1 = AM.init()
-
-
-
-
-B2 = AM.applyChanges(B1, X0)
-
-B3 = AM.change(B2, json => {
-    json.list.push('B')
-})
-
-XB = AM.getChanges(A2,A3)
-B4 = AM.applyChanges(B3, XA)
+// USER B
+$ fc keys pubpvt 'passwd-B'
+<pubkey-B> <pvtkey-B>
+$ fc chains join '#p2p' <pubkey-A> <pubkey-A> <pubkey-B>
+$ fc chain '#p2p' post inline "B" --sign=<pvtkey-B>
+$ fc peer <ip-A> sync '#p2p'
+$ fc chain '#p2p' consensus
+A --> B
 \end{verbatim}
 \end{minipage}
 }
+
+Users \code{A} and \code{B} first generate their identities and join the
+public chain \code{#p2p} with the same arguments.
+The keys after \code{join '#p2p'} represent the pioneers, which share an
+initial reputation moderate the chain.
+In the example, we determine that user \code{A} has twice of \code{B}'s
+reputation in order to illustrate the consensus mechanism of Freechains.
+Then, the users call \code{chain post} concurrently with distinct messages and
+signatures, which creates a fork in the chain.
+After the users synchronize with \code{peer sync}, the messages are exchanged
+and the chain reaches the state of Figure~\ref{fig.TODO}.
+
+
+ including the pioneer key.
+The pioneer xxx~\cite{TODO}.
+
+ of the pioneer
+
+
+
+\code{#p2p}
+
+
+
+initialize a new JSON independently (\code{A1} and
+\code{B1}).
+Then, peer \code{A} adds an empty list (\code{A2}), computes the difference
+(\code{X0}), and synchronizes it with peer \code{B} (\code{B2}).
+Then, both peers push values to the list concurrently (\code{A3} and
+\code{B3}), and synchronizes the differences (\code{XA} and \code{XB}), which
+are applied in the other sides (\code{A4} and \code{B4}).
+Automerge ensures that the final states \code{A4} and \code{B4} are exactly the
+same, with the list containing both values \code{'A'} and \code{'B'}.
+However, since the editions are concurrent, the final list may become either
+\code{['A','B']} or \code{['B','A']}, depending on arbitrary criteria such as
+peer identity or timestamp.
+Nevertheless, regardless of the order, the users intent to push two values into
+the list is preserved.
 
 However, Freechains does not support structured datasets with attached semantics, since
 it represents content as a simple linked list of binary blobs stored in individual “chains”,
