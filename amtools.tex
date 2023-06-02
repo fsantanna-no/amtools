@@ -24,7 +24,7 @@
 \sloppy
 
 \title{
-    \emph{AM-Tools} - Operating Permissionless P2P JSON Datasets
+    \emph{AM-Tools} - Operating Permissionless JSON Datasets
 }
 
 \author{Anonymous}
@@ -47,18 +47,17 @@
 \begin{abstract}
 Networked collaborative applications, such as Google Docs and Github, allow
 users to work together concurrently.
-These applications rely on distributed datasets that represent documents, code,
-and other data, which users expect to see and share in a consistent way.
+These applications rely on distributed datasets, such as documents and code,
+which users expect to see and share in a consistent way.
 However, most practical collaborative systems rely on centralized authorities
 to ensure data consistency and correctness.
 %
-In this work, we propose a set of tools to read and write JSON datasets in a
-permissionless P2P environment, in which users participate in a consensus
+In this work, we propose a set of tools to manipulate JSON datasets in a
+permissionless P2P environment in which users participate in a consensus
 mechanism to ensure consistency and correctness.
 %
-\emph{AM-Tools} reconcile Automerge, a JSON-based conflict-free replicated data
-type, with Freechains, a permissionless blockchain with a reputation mechanism
-to moderate content and prevent abuse.
+\emph{AM-Tools} reconcile Automerge, a JSON-based CRDT, with Freechains, a
+blockchain with a reputation mechanism to moderate datasets.
 %
 \emph{AM-Tools} resembles a distributed version control system (DVCS), but with
 a consensus mechanism to merge conflicting editions while preserving data
@@ -73,15 +72,12 @@ working together concurrently \cite{wu2010partial}.
 Examples of collaborative applications include Google Docs, Github and
 Wikipedia.
 %
-These applications rely on distributed datasets that are read, written, stored,
-and synchronized through the network.
-By datasets, we mean any kind of data structures that can represent documents,
-code, or social media feeds, as found in collaborative applications.
-Users expect to see and share these datasets in a consistent way, even if their
-machines synchronize sporadically and at different times.
-%
+These applications rely on distributed datasets, such as documents and code,
+which are read, written, stored, and synchronized through the network.
 In this work, we use generic JSON files to represent datasets, given that they
 are human readable and widely adopted as an interchange format.
+Users expect to see and share these JSON datasets in a consistent way, even if
+their machines synchronize sporadically and at different times.
 
 Currently, most practical collaborative systems rely on centralized authorities
 to ensure data consistency and correctness.
@@ -110,12 +106,14 @@ As an example, Automerge~\cite{kleppmann2018automerge} provides JSON data
 structures as CRDTs, such that they can be read and written concurrently
 without conflicts.
 Nevertheless, CRDTs are still subject to corner cases, such as simultaneous
-editions of the very same part of documents.
+editions of the very same part of datasets.
 In addition, CRDTs are not themselves immune to malicious users and Sybils,
-which might vandalize datasets with no restrictions.
-In such cases, a consensus mechanism might still be necessary to preserve data
+which might vandalize datasets with no restrictionsm thus affecting their
 integrity.
+%In such cases, a consensus mechanism might still be necessary to preserve data
+%integrity.
 
+\begin{comment}
 As a partial solution to preserve integrity, permissioned P2P systems opt for a
 centralized authority to grant membership to new users.
 Examples of permissioned P2P networks include Ripple~\cite{schwartz2014ripple}
@@ -124,6 +122,7 @@ and Hyperledger Fabric~\cite{androulaki2018hyperledger}.
 Nevertheless, our goal is for a permissionless environment that requires no
 centralized membership authority, preserving the organic growth of traditional
 P2P systems.
+\end{comment}
 
 In a permissionless context, a major challenge is to support concurrent data
 edition and moderation, such that users share consistent and correct datasets
@@ -133,21 +132,19 @@ Bitcoin~\cite{nakamoto2008bitcoin} is a Sybil-resistant permissionless protocol
 because it is expensive to write to its unique timeline (either via
 proof-of-work or transaction fees).
 However, Bitcoin and cryptocurrencies in general provide no subjective means to
-moderate conflicts in collaborative datasets, but instead rely on tokens for
+moderate conflicts in collaborative datasets, but instead rely on tokens to
 arbitrate conflicts.
 %
 As an alternative targeting collaborative applications,
 Freechains~\cite{sant2020freechains} resists Sybils through a reputation
 mechanism that moderates content through likes and dislikes and, at the same
 time, delivers network consensus.
-However, unlike CRDTs, Freechains does not support structured datasets with
-attached semantics, since it represents content as a simple linked list of
-binary blobs stored in individual ``chains'', which each application must
-interpret appropriately.
+However, unlike CRDTs and Automerge, Freechains does not support operations on
+structured datasets, such as the JSON format.
 
 In this work, we propose \emph{AM-Tools}, a set of tools that reconciles
 Automerge and Freechains, extending JSON CRDTs with a consensus mechanism that
-can handle consistency corner cases and also moderate malicious editions:
+can handle correctness corner cases and also moderate malicious editions:
 Automerge editions are ordered by the Freechains consensus mechanism providing
 a priority to resolve conflicts, thus preserving accuracy.
 In addition, further moderation can revert priorities or even remove abusive or
