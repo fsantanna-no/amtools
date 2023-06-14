@@ -18,6 +18,12 @@
 \newcommand{\Xoo} {$1{\leftrightarrow}1$\xspace}
 \newcommand{\Xo}  {$1{\hookleftarrow}$\xspace}
 
+\newcommand{\amrw}       {\texttt{AM-rw}\xspace}
+\newcommand{\amdiff}     {\texttt{AM-diff}\xspace}
+\newcommand{\ampatch}    {\texttt{AM-patch}\xspace}
+\newcommand{\amcheckout} {\texttt{AM-checkout}\xspace}
+\newcommand{\amcommit}   {\texttt{AM-commit}\xspace}
+
 \renewcommand{\theenumi}{\alph{enumi}}
 
 \hyphenation{off-line}
@@ -161,13 +167,12 @@ In this sense \AMT resembles a distributed version control system (DVCS), but
 with a consensus mechanism to merge conflicting editions while
 preserving data correctness.
 
-\AMT is composed of 4 utilities: \code{AM-rw}, \code{AM-diff}, \code{AM-patch},
-and \code{AM-freechains}.
+\AMT is composed of 3 utilities: \amrw, \amdiff \& \ampatch, and \amcheckout \&
+\amcommit.
 %
-\code{AM-rw} allows to read and write portions of a JSON file.
-\code{AM-diff} obtains the differences between two JSON files.
-\code{AM-patch} applies differences to a JSON file.
-\code{AM-freechains} commits and checkouts a JSON file to its corresponding
+\amrw allows to read and write portions of a JSON file.
+\amdiff \& \ampatch obtains and applies differences between JSON files.
+\amcheckout \& \amcommit reads and writes a JSON file to its corresponding
 blockchain.
 
 The rest of this paper is organized as follows.
@@ -249,9 +254,9 @@ Instead, \code{AM.change} receives a function argument to manipulate
 the given object with tracking enabled.
 
 Regarding \AMT,
-    \code{AM.init} and \code{AM.change} are the basis of \code{AM-rw};
+    \code{AM.init} and \code{AM.change} are the basis of \amrw;
     \code{AM.getChanges}, \code{AM.applyChanges}, and \code{AM.getConflicts}
-    are the basis of \code{AM-diff} and \code{AM-patch}; and
+    are the basis of \amdiff and \ampatch; and
     \code{AM.save} and \code{AM.load} are used for persistence in
     \code{AM-freechains}.
 
@@ -514,17 +519,17 @@ consistency, integrity, and accuracy.
 \label{sec.amtools}
 
 As described in the Introduction, \AMT is composed of 4 utilities:
-    \code{AM-rw}, \code{AM-diff}, \code{AM-patch}, and \code{AM-freechains}.
+    \amrw, \amdiff, \ampatch, and \code{AM-freechains}.
 %
-\code{AM-rw} allows to read and write portions of a JSON file.
-\code{AM-diff} obtains the differences between two JSON files.
-\code{AM-patch} applies differences to a JSON file.
+\amrw allows to read and write portions of a JSON file.
+\amdiff obtains the differences between two JSON files.
+\ampatch applies differences to a JSON file.
 \code{AM-freechains} checkouts and commits a JSON file to its corresponding
 blockchain.
 
-\subsection{\code{AM-rw}: JSON Command-Line Editor}
+\subsection{\amrw: JSON Command-Line Editor}
 
-\code{AM-rw}%
+\amrw%
     %\footnote{AM-rw: \url{https://github.com/fabiobosisio/amrw}}
     \footnote{AM-rw: \url{https://github.com/<hidden-anonymous>}}
 is a facade to hide the complexity of \code{AM.change}, and also provide a
@@ -532,7 +537,7 @@ uniform syntax to manipulate JSON files.
 Recall from Section~\ref{sec.both.automerge} that, because CmRDTs need to keep
 track of all operations, JSON files cannot be edited directly.
 
-The basic command-line API of \code{AM-rw} is as follows:
+The basic command-line API of \amrw is as follows:
 
 \begin{itemize}
 \item \code{AM-rw <file> init} \\
@@ -562,23 +567,23 @@ in which we add a field \code{list} as an empty array.
 The writes in sequence navigate to the array in field \code{list}, and insert
 strings \code{A} and \code{B}.
 
-Even though \code{AM-rw} is more verbose in comparison to Automerge's
+Even though \amrw is more verbose in comparison to Automerge's
 \code{AM.change}, it provides a uniform syntax to manipulate JSON files.
 In addition, as a command-line tool, it can be used from outside JavaScript
 even by non programmers.
 
-\subsection{\code{AM-diff} \& \code{AM-patch}: JSON Diff \& Patch}
+\subsection{\amdiff \& \ampatch: JSON Diff \& Patch}
 
-\code{AM-diff}%
+\amdiff%
     %\footnote{AM-diff: \url{https://github.com/fabiobosisio/amdiff}}
     \footnote{AM-diff: \url{https://github.com/<hidden-anonymous>}}
-and \code{AM-patch}%
+and \ampatch%
     %\footnote{AM-patch: \url{https://github.com/fabiobosisio/ampatch}}
     \footnote{AM-patch: \url{https://github.com/<hidden-anonymous>}}
 are counterparts to textual \emph{diff \& patch} UNIX tools, but for
 Automerge JSON internal format.
 
-The basic command-line API of \code{AM-diff} and \code{AM-patch} is as follows:
+The basic command-line API of \amdiff and \ampatch is as follows:
 
 \begin{itemize}
 \item \code{AM-diff <old> <new>} \\
@@ -607,6 +612,9 @@ to store these file \emph{diffs}, which users can rate and possibly revoke,
 affecting the consensus order to recreate the file history.
 
 \subsection{\code{AM-freechains}: JSON Synchronization}
+
+The final missing piece of \AMT is to synchronize JSON files between replicas
+and then update the local version based on the global consensus.
 
 \begin{verbatim}
 AM-freechains (checkout|commit) <chain> <file> --sign=<pvt>
