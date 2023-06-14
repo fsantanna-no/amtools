@@ -7,6 +7,7 @@
 \usepackage{verbatim}
 \usepackage{xspace}
 \newcommand{\FC}       {Freechains\xspace}
+\newcommand{\AMT}      {\emph{AM-Tools}\xspace}
 \newcommand{\reps}     {\emph{reps}\xspace}
 \newcommand{\onerep}   {\emph{1~rep}\xspace}
 \newcommand{\nreps}[1] {\emph{#1~reps\xspace}}
@@ -24,7 +25,7 @@
 \sloppy
 
 \title{
-    \emph{AM-Tools} - Operating Permissionless JSON Datasets
+    \AMT - Operating Permissionless JSON Datasets
 }
 
 \author{Anonymous}
@@ -52,15 +53,15 @@ which users expect to see and share in a consistent way.
 However, most practical collaborative systems rely on centralized authorities
 to ensure data consistency and correctness.
 %
-In this work, we propose a set of tools to manipulate JSON datasets in a
+In this work, we propose \AMT, a set of tools to manipulate JSON datasets in a
 permissionless P2P environment in which users participate in a consensus
 mechanism to ensure consistency and correctness.
 %
-\emph{AM-Tools} reconcile Automerge, a JSON-based CRDT, with Freechains, a
-blockchain with a reputation mechanism to moderate datasets.
+\AMT reconcile Automerge, a JSON-based CRDT, with Freechains, a blockchain with
+a reputation mechanism to moderate datasets.
 %
-\emph{AM-Tools} resembles a distributed version control system (DVCS), but with
-a consensus mechanism to merge conflicting editions while preserving data
+\AMT resembles a distributed version control system (DVCS), but with a
+consensus mechanism to merge conflicting editions while preserving data
 correctness.
 \end{abstract}
 
@@ -108,7 +109,7 @@ without conflicts.
 Nevertheless, CRDTs are still subject to corner cases, such as simultaneous
 editions of the very same part of datasets.
 In addition, CRDTs are not themselves immune to malicious users and Sybils,
-which might vandalize datasets with no restrictionsm thus affecting their
+which might vandalize datasets with no restrictions, thus affecting their
 integrity.
 %In such cases, a consensus mechanism might still be necessary to preserve data
 %integrity.
@@ -142,9 +143,9 @@ time, delivers network consensus.
 However, unlike CRDTs and Automerge, Freechains does not support operations on
 structured datasets, such as the JSON format.
 
-In this work, we propose \emph{AM-Tools}, a set of tools that reconciles
-Automerge and Freechains, extending JSON CRDTs with a consensus mechanism that
-can handle correctness corner cases and also moderate malicious editions:
+In this work, we propose \AMT, a set of tools that reconciles Automerge and
+Freechains, extending JSON CRDTs with a consensus mechanism that can handle
+correctness corner cases and also moderate malicious editions:
 Automerge editions are ordered by the Freechains consensus mechanism providing
 a priority to resolve conflicts, thus preserving accuracy.
 In addition, further moderation can revert priorities or even remove abusive or
@@ -156,12 +157,12 @@ JSON.
 The list is traversed from the beginning in consensus order to recreate the
 file as a complete JSON.
 %
-In this sense \emph{AM-Tools} resembles a distributed version control system
-(DVCS), but with a consensus mechanism to merge conflicting editions while
+In this sense \AMT resembles a distributed version control system (DVCS), but
+with a consensus mechanism to merge conflicting editions while
 preserving data correctness.
 
-\emph{AM-Tools} is composed of 4 utilities: \code{AM-rw}, \code{AM-diff},
-\code{AM-patch}, and \code{AM-freechains}.
+\AMT is composed of 4 utilities: \code{AM-rw}, \code{AM-diff}, \code{AM-patch},
+and \code{AM-freechains}.
 %
 \code{AM-rw} allows to read and write portions of a JSON file.
 \code{AM-diff} obtains the differences between two JSON files.
@@ -171,17 +172,19 @@ blockchain.
 
 The rest of this paper is organized as follows.
 Section~\ref{sec.both} describes the basic functionality of Automerge and
-Freechains as separate tools.
-Section~\ref{sec.amtools} describes \emph{AM-Tools} and how it combines
-Automerge and Freechains.
+Freechains as separate tools, highlighting how they form the basis of
+\AMT.
+Section~\ref{sec.amtools} describes \AMT and how it combines Automerge and
+Freechains.
 
 \section{Automerge and Freechains}
 \label{sec.both}
 
-This section describes the basic functionality of Automerge and Freechains in
-separate.
+This section describes the basic functionality of Automerge and Freechains as
+separate tools, highlighting how they form the basis of \AMT.
 
 \subsection{Automerge}
+\label{sec.both.automerge}
 
 Automerge~\cite{kleppmann2018automerge} is an open-source library that provides
 CRDT-based JSON datasets to build collaborative applications.
@@ -206,17 +209,20 @@ according to the eventual consistency model~\cite{p2p.sec}.
 The basic JavaScript API of Automerge is as follows:
 
 \begin{itemize}
-\item \code{obj = AM.init()}: \\
+\item \code{obj = AM.init()} \\
     Initializes a JSON as an empty object \code{obj=\{\}}.
-\item \code{obj2 = AM.change(obj1, f)}: \\
+\item \code{obj2 = AM.change(obj1, f)} \\
     Modifies object \code{obj1} through function \code{f}, resulting in
     object \code{obj2}.
-\item \code{chgs = AM.getChanges(obj1, obj2)}: \\
+\item \code{chgs = AM.getChanges(obj1, obj2)} \\
     Compares objects \code{obj1} and \code{obj2}, resulting in changes
     \code{chgs}.
 \item \code{obj2 = AM.applyChanges(obj1, chgs)} \\
     Applies changes \code{chgs} to object \code{obj1}, resulting in object
     \code{obj2}.
+\item \code{errs = AM.getConflicts(obj, fld)} \\
+    Checks merge conflicts in field \code{fld} of object \code{obj}, resulting
+    in a set \code{errs}.
 \item \code{bin = AM.save(obj)} \\
     Converts object \code{obj} to a byte array \code{bin}.
 \item \code{obj = AM.load(bin)} \\
@@ -225,12 +231,15 @@ The basic JavaScript API of Automerge is as follows:
 
 Note that the basic API of Automerge is network agnostic and does not provide
 a mechanism to synchronize objects, requiring extra libraries for this purpose.
+In Section~\ref{sec.amtools}, we propose to use \code{AM-freechains} for
+synchronization.
 
 The API usage is straightforward:
     initialize a dataset with \code{AM.init},
     make local changes with \code{AM.change} and \code{AM.getChanges},
     synchronize with other users (extra),
     apply remote changes with \code{AM.applyChanges},
+    check conflicts with \code{AM.getConflicts},
     persist locally with \code{AM.save} and \code{AM.load}.
 Except for function \code{AM.change}, the other functions are straightforward.
 %
@@ -238,6 +247,13 @@ Because Automerge is a CmRDT and must keep track of all operations, JSON
 objects cannot be manipulated directly in JavaScript.
 Instead, \code{AM.change} receives a function argument to manipulate
 the given object with tracking enabled.
+
+Regarding \AMT,
+    \code{AM.init} and \code{AM.change} are the basis of \code{AM-rw};
+    \code{AM.getChanges}, \code{AM.applyChanges}, and \code{AM.getConflicts}
+    are the basis of \code{AM-diff} and \code{AM-patch}; and
+    \code{AM.save} and \code{AM.load} are used for persistence in
+    \code{AM-freechains}.
 
 The next example simulates two peers \code{A} and \code{B} manipulating a
 JSON concurrently to reach the final state \code{\{list:~['A','B']\}}:
@@ -287,7 +303,7 @@ Peers \code{A} and \code{B} initialize a new JSON independently (\code{A1} and
 Then, peer \code{A} adds an empty list (\code{A2}), computes the difference
 (\code{X0}), and synchronizes it with peer \code{B} (\code{B2}).
 Then, both peers push values to the list concurrently (\code{A3} and
-\code{B3}), and synchronizes the differences (\code{XA} and \code{XB}), which
+\code{B3}), and synchronize the differences (\code{XA} and \code{XB}), which
 are applied in the other sides (\code{A4} and \code{B4}).
 Automerge ensures that the final states \code{A4} and \code{B4} are exactly the
 same, with the list containing both values \code{'A'} and \code{'B'}.
@@ -297,12 +313,12 @@ peer identity or timestamp.
 Nevertheless, regardless of the order, the users intent to push two values into
 the list is preserved.
 
-Now, consider that instead of calls to \code{json.list.push}, the peers set the
+Now, suppose that instead of calls to \code{json.list.push}, the peers set the
 lists directly as \code{json.list=['A']} and \code{json.list=['B']}.
 In this case, the concurrent assignments are incompatible, and an
 irreconcilable conflict occurs.
 Nevertheless, Automerge arbitrarily chooses one of the assignments, but still
-detects and indicates the conflict through the API \code{AM.getConflicts}.
+detects and indicates the conflict through \code{AM.getConflicts}.
 Note that for such corner cases, Automerge does not preserve accuracy, since
 the intent of one of the users is not satisfied.
 
@@ -316,17 +332,18 @@ eventually-consistency JSON datasets, it cannot ensure integrity and accuracy
 in all cases, specially in a permissionless environment.
 
 \subsection{Freechains}
+\label{sec.both.freechains}
 
-Freechains~\cite{fcs.sbseg20} is a permissionless P2P protocol to disseminate
-content in which all users observe the same total order of messages through a
-consensus mechanism.
+Freechains~\cite{fcs.sbseg20} is a content dissemination P2P protocol in which
+all users observe the same total order of messages through a consensus
+mechanism.
 %
-Users post messages to a topic or chain (which behaves as an independent
-blockchain), and other users subscribed to the same chain eventually receive
-the messages.
+Users post messages to a topic or chain and other users subscribed to the same
+chain eventually receive the messages.
 %
-Freechains introduces a reputation mechanism that moderates content through
-likes and dislikes and, at the same time, delivers network consensus.
+Each chain behaves as an independent blockchain with an innovative reputation
+mechanism that moderates content through likes and dislikes and, at the same
+time, delivers consensus.
 %
 Figure~\ref{fig.general} summarizes the general reputation rules, in which
 users can spend tokens named \emph{reps} to post and rate content in the
@@ -352,26 +369,26 @@ chains:
 \end{figure}
 
 The reputation mechanism of Freechains works towards our goal of subjective
-correctness as follows:
+correctness in \AMT as follows:
     dislikes can revoke abusive and malicious posts, thus preserving integrity;
     likes can favor posts with more quality, thus preserving accuracy.
 
 The basic command-line API of Freechains is as follows:
 
 \begin{itemize}
-\item \code{fc keys ...}: \\
+\item \code{fc keys ...} \\
     Creates cryptographic keys as user identities.
-\item \code{fc chains join ...}: \\
+\item \code{fc chains join ...} \\
     Joins a chain to post and read content.
-\item \code{fc chain post ...}: \\
+\item \code{fc chain post ...} \\
     Posts a message to a chain.
-\item \code{fc chain get ...}: \\
+\item \code{fc chain get ...} \\
     Reads a post from a chain.
-\item \code{fc chain like ...}: \\
+\item \code{fc chain like ...} \\
     Likes (or dislikes) a post in the chain.
-\item \code{fc chain consensus ...}: \\
+\item \code{fc chain consensus ...} \\
     Shows all posts from a chain in consensus order.
-\item \code{fc peer sync ...}: \\
+\item \code{fc peer sync ...} \\
     Synchronizes a chain with a remote peer.
 \end{itemize}
 
@@ -392,8 +409,14 @@ enumerates all post ids, which can be read through \code{fc~chain~get}.
 %
 Finally, \code{fc~peer~sync} exchanges missing posts between replicas.
 
-Freechains is also designed for \emph{local-first software}~\cite{p2p.local},
-given that most commands only modify the local replica.
+Regarding \AMT, we use \code{fc~chain~post/get} to persist Automerge operations
+serialized through \code{AM.save} and \code{AM.load}.
+We also rely on \code{fc~peer~sync} as a synchronization layer to Automerge,
+but with integrity and accuracy via \code{fc~chain~consensus}.
+
+Like Automerge, Freechains is also designed for
+\emph{local-first software}~\cite{p2p.local}, given that most commands only
+modify the local replica.
 For this reason, concurrent posts are not only encouraged, but are also
 inevitable.
 The next example simulates two users \code{A} and \code{B} posting concurrently
@@ -483,14 +506,114 @@ integrity abuse and corner-case inaccuracies.
 On the other hand, Freechains can resist malicious peers and order conflicting
 corner cases, but does not support structured datasets with merging policies.
 
-By reconciling Automerge and Freechains, our goal is to support a solid
-foundation to manipulate JSON datasets in permissionless networks, while
-preserving consistency, integrity, and accuracy.
+By reconciling Automerge and Freechains, we provide a solid foundation to
+manipulate JSON datasets in permissionless networks, while preserving
+consistency, integrity, and accuracy.
 
 \section{AM-Tools}
 \label{sec.amtools}
 
-TODO
+As described in the Introduction, \AMT is composed of 4 utilities:
+    \code{AM-rw}, \code{AM-diff}, \code{AM-patch}, and \code{AM-freechains}.
+%
+\code{AM-rw} allows to read and write portions of a JSON file.
+\code{AM-diff} obtains the differences between two JSON files.
+\code{AM-patch} applies differences to a JSON file.
+\code{AM-freechains} checkouts and commits a JSON file to its corresponding
+blockchain.
+
+\subsection{\code{AM-rw}: JSON Command-Line Editor}
+
+\code{AM-rw}%
+    %\footnote{AM-rw: \url{https://github.com/fabiobosisio/amrw}}
+    \footnote{AM-rw: \url{https://github.com/<hidden-anonymous>}}
+is a facade to hide the complexity of \code{AM.change}, and also provide a
+uniform syntax to manipulate JSON files.
+Recall from Section~\ref{sec.both.automerge} that, because CmRDTs need to keep
+track of all operations, JSON files cannot be edited directly.
+
+The basic command-line API of \code{AM-rw} is as follows:
+
+\begin{itemize}
+\item \code{AM-rw <file> init} \\
+    Initializes a file as an empty JSON object (based on \code{AM.init}).
+\item \code{AM-rw <file> <path>... (read | write <op>)} \\
+    Reads a value from or writes to a JSON file (based on \code{AM.change}).
+    A \code{<path>...} is a sequence of field or index accesses to navigate the
+    JSON.
+    A \code{write <op>} can insert, set, or remove a field or index from the
+    JSON.
+\end{itemize}
+
+The next example initializes and writes to a JSON to reach the final state
+{list: ['A','B']}:
+
+\begin{verbatim}
+$ AM-rw "test.am" init
+$ AM-rw "test.am" write object ins "list" array
+$ AM-rw "test.am" field "list" write array ins 0 string "A"
+$ AM-rw "test.am" field "list" write array ins 1 string "B"
+$ AM-rw "test.am" read
+{ list: [ 'A', 'B' ] }
+\end{verbatim}
+
+In the first write, we use an empty path, which navigates to the root object,
+in which we add a field \code{list} as an empty array.
+The writes in sequence navigate to the array in field \code{list}, and insert
+strings \code{A} and \code{B}.
+
+Even though \code{AM-rw} is more verbose in comparison to Automerge's
+\code{AM.change}, it provides a uniform syntax to manipulate JSON files.
+In addition, as a command-line tool, it can be used from outside JavaScript
+even by non programmers.
+
+\subsection{\code{AM-diff} \& \code{AM-patch}: JSON Diff \& Patch}
+
+\code{AM-diff}%
+    %\footnote{AM-diff: \url{https://github.com/fabiobosisio/amdiff}}
+    \footnote{AM-diff: \url{https://github.com/<hidden-anonymous>}}
+and \code{AM-patch}%
+    %\footnote{AM-patch: \url{https://github.com/fabiobosisio/ampatch}}
+    \footnote{AM-patch: \url{https://github.com/<hidden-anonymous>}}
+are counterparts to textual \emph{diff \& patch} UNIX tools, but for
+Automerge JSON internal format.
+
+The basic command-line API of \code{AM-diff} and \code{AM-patch} is as follows:
+
+\begin{itemize}
+\item \code{AM-diff <old> <new>} \\
+    Calculates the differences between the given files.
+\item \code{AM-patch <cur> <patch>} \\
+    Applies the patch to the given file.
+\end{itemize}
+
+The next example illustrates how to extract the differences between an old and
+a new file, and then recreate the new file by applying the obtained difference
+into the old file:
+
+\begin{verbatim}
+$ AM-diff  "old.am" "new.am" > "old-new.diff"
+$ AM-patch "old.am" "old-new.diff" > "rec.am"
+\end{verbatim}
+
+At the end, \code{new.am} and \code{rec.am} must be equal files.
+
+Just like standard version control systems, the idea is that storing
+\emph{diffs} to recreate the full history of a given file history is more
+efficient than storing all individual versions of that file.
+
+With \AMT, we support a permissionless environment built on top of Freechains
+to store these file \emph{diffs}, which users can rate and possibly revoke,
+affecting the consensus order to recreate the file history.
+
+\subsection{\code{AM-freechains}: JSON Synchronization}
+
+\begin{verbatim}
+AM-freechains (checkout|commit) <chain> <file> --sign=<pvt>
+\end{verbatim}
+
+
+facade is an object that serves as a front-facing interface masking more complex underlying or structural code. A facade can:
 
 \bibliographystyle{abbrv}
 \bibliography{amtools}
