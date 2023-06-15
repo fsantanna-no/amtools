@@ -178,20 +178,14 @@ preserving data correctness.
 blockchain.
 
 The rest of this paper is organized as follows.
-Section~\ref{sec.both} describes the basic functionality of Automerge and
-Freechains as separate tools, highlighting how they form the basis of
-\AMT.
+Sections~\ref{sec.automerge}~and~\ref{sec.freechains} describe the basic
+functionality of Automerge and Freechains as separate tools, highlighting how
+they form the basis of \AMT.
 Section~\ref{sec.amtools} describes \AMT and how it combines Automerge and
 Freechains.
 
-\section{Automerge and Freechains}
-\label{sec.both}
-
-This section describes the basic functionality of Automerge and Freechains as
-separate tools, highlighting how they form the basis of \AMT.
-
-\subsection{Automerge}
-\label{sec.both.automerge}
+\section{Automerge}
+\label{sec.automerge}
 
 Automerge~\cite{kleppmann2018automerge} is an open-source library that provides
 CRDT-based JSON datasets to build collaborative applications.
@@ -339,8 +333,8 @@ Therefore, even though Automerge provides a solid foundation for
 eventually-consistency JSON datasets, it cannot ensure integrity and accuracy
 in all cases, specially in a permissionless environment.
 
-\subsection{Freechains}
-\label{sec.both.freechains}
+\section{Freechains}
+\label{sec.freechains}
 
 Freechains~\cite{fcs.sbseg20} is a content dissemination P2P protocol in which
 all users observe the same total order of messages through a consensus
@@ -505,21 +499,19 @@ Even though Freechains provide means to preserve integrity and accuracy, it
 does not support structured datasets with attached semantics, since it
 represents content as a simple linked list of binary blobs stored in chains.
 
-\subsection{Summary}
+\section{AM-Tools}
+\label{sec.amtools}
 
+\AMT reconciles Automerge and Freechains to provide a solid foundation to
+manipulate JSON datasets in permissionless networks, while preserving
+consistency, integrity, and accuracy.
+%
 On the one hand, Automerge supports decentralized high-level structured JSON
 datasets with fine-grained merging policies, but which are still subject to
 integrity abuse and corner-case inaccuracies.
 %
 On the other hand, Freechains can resist malicious peers and order conflicting
 corner cases, but does not support structured datasets with merging policies.
-
-By reconciling Automerge and Freechains, we provide a solid foundation to
-manipulate JSON datasets in permissionless networks, while preserving
-consistency, integrity, and accuracy.
-
-\section{AM-Tools}
-\label{sec.amtools}
 
 As described in the Introduction, \AMT is composed of 3 utilities:
     \amrw,
@@ -538,7 +530,7 @@ blockchain.
     \footnote{\amrw: \url{https://github.com/<hidden-anonymous>}}
 is a facade to hide the complexity of \code{AM.change}, and also provide a
 uniform syntax to manipulate JSON files.
-Recall from Section~\ref{sec.both.automerge} that, because CmRDTs need to keep
+Recall from Section~\ref{sec.automerge} that, because CmRDTs need to keep
 track of all operations, JSON files cannot be edited directly.
 
 The basic command-line API of \amrw is as follows:
