@@ -182,7 +182,8 @@ Sections~\ref{sec.automerge}~and~\ref{sec.freechains} describe the basic
 functionality of Automerge and Freechains as separate tools, highlighting how
 they form the basis of \AMT.
 Section~\ref{sec.amtools} describes \AMT and how it combines Automerge and
-Freechains.
+Freechains to support safe concurrent JSON editing in a permissionless P2P
+environment.
 
 \section{Automerge}
 \label{sec.automerge}
@@ -422,43 +423,43 @@ modify the local replica.
 For this reason, concurrent posts are not only encouraged, but are also
 inevitable.
 The next example simulates two users \code{A} and \code{B} posting concurrently
-to chain \code{\#p2p}:
+to chain \code{\#test}:
 
 \noindent
 {\footnotesize
 \begin{minipage}[t]{0.5\textwidth}
 \begin{verbatim}
 // USER A
-$ fc keys pubpvt 'passwd-A'
+$ fc keys pubpvt "passwd-A"
 <pub-A> <pvt-A>
-$ fc chains join '#p2p' \
+$ fc chains join "#test" \
     <pub-A> <pub-A> <pub-B>
-$ fc chain '#p2p' post inline \
+$ fc chain "#test" post inline \
     "msg-A" --sign=<pvt-A>
-$ fc peer <ip-B> sync '#p2p'
-$ fc chain '#p2p' consensus
+$ fc peer <ip-B> sync "#test"
+$ fc chain "#test" consensus
 msg-A --> msg-B
 \end{verbatim}
 \end{minipage}
 \begin{minipage}[t]{0.5\textwidth}
 \begin{verbatim}
 // USER B
-$ fc keys pubpvt 'passwd-B'
+$ fc keys pubpvt "passwd-B"
 <pub-B> <pvt-B>
-$ fc chains join '#p2p' \
+$ fc chains join "#test" \
     <pub-A> <pub-A> <pub-B>
-$ fc chain '#p2p' post inline \
+$ fc chain "#test" post inline \
     "msg-B" --sign=<pvt-B>
-$ fc peer <ip-A> sync '#p2p'
-$ fc chain '#p2p' consensus
+$ fc peer <ip-A> sync "#test"
+$ fc chain "#test" consensus
 msg-A --> msg-B
 \end{verbatim}
 \end{minipage}
 }
 
 Users \code{A} and \code{B} first generate their identities and join the
-public chain \code{\#p2p} with the same arguments.
-The keys after \code{join~'\#p2p'} represent the pioneers, which share an
+public chain \code{\#test} with the same arguments.
+The keys after \code{join~"\#test"} represent the pioneers, which share an
 initial reputation to moderate the chain.
 In the example, we determine that user \code{A} has twice of \code{B}'s
 reputation in order to illustrate the consensus mechanism of Freechains.
@@ -549,6 +550,7 @@ The basic command-line API of \amrw is as follows:
 The next example initializes and writes to a JSON to reach the final state
 {list: ['A','B']}:
 
+{\footnotesize
 \begin{verbatim}
 $ AM-rw "test.am" init
 $ AM-rw "test.am" write object ins "list" array
@@ -557,6 +559,7 @@ $ AM-rw "test.am" field "list" write array ins 1 string "B"
 $ AM-rw "test.am" read
 { list: [ 'A', 'B' ] }
 \end{verbatim}
+}
 
 In the first write, we use an empty path, which navigates to the root object,
 in which we add a field \code{list} as an empty array.
@@ -589,14 +592,16 @@ The next example illustrates how to extract the differences between an old and
 a new file, and then recreate the new file by applying the obtained difference
 into the old file:
 
+{\footnotesize
 \begin{verbatim}
 $ AM-diff  "old.am" "new.am" > "old-new.diff"
 $ AM-patch "old.am" "old-new.diff" > "rec.am"
 \end{verbatim}
+}
 
 At the end, \code{new.am} and \code{rec.am} must be equal files.
 
-Just like standard version control systems, the idea is that storing
+Just like standard version control systems (VCSs), the idea is that storing
 \emph{diffs} to recreate the full history of a given file history is more
 efficient than storing all individual versions of that file.
 
@@ -606,19 +611,68 @@ affecting the consensus order to recreate the file history.
 
 \subsection{\amcheckout \& \amcommit}
 
-The final missing piece of \AMT is to synchronize JSON files between replicas
-and then update the local version based on the global consensus.
+The final piece of \AMT is to synchronize JSON files between replicas
+and then update local versions based on the global consensus.
 
 \amcheckout \& \amcommit%
     %\footnote{\amcheckout \& \amcommit: \url{https://github.com/fabiobosisio/ampatch}}
     \footnote{\amcheckout \& \amcommit: \url{https://github.com/<hidden-anonymous>}}
+are counterparts to standard \emph{checkout \& commit} VCS tools, but that use
+Freechains for persistence, conflict resolution, and synchronization.
 
+The basic command-line API of \amcheckout \& \amcommit is as follows:
+
+\begin{itemize}
+\item \code{AM-checkout <chain>} \\
+    Recreates the JSON file from the chain.
+\item \code{AM-commit <chain> --sign=<pvt>} \\
+    Posts the file differences into the chain with the author signature.
+\end{itemize}
+
+The next example illustrates how to checkout a JSON file, modify it, and then
+commit it back into the chain:
+
+{\footnotesize
 \begin{verbatim}
-AM-freechains (checkout|commit) <chain> <file> --sign=<pvt>
+$ AM-checkout "test"
+$ AM-rw "test.am" field "list" write array ins 2 string "C"
+$ AM-commit "test"
 \end{verbatim}
+}
 
+The synchronization between replicas must be done in pairs through
+\code{fc~peer~sync}, as described in Section~\ref{sec.freechains}.
+%
+The command \code{AM-checkout} traverses the chain replica \code{test},
+starting from its genesis block holding the initial JSON, and then calling
+\code{AM-patch}, in consensus order, for each block holding the \emph{diffs}.
+The result is the local file \code{test.am} with the most recent JSON.
+%
+The command \code{AM-rw} makes local modifications to \code{test.am}, but which
+do not affect the chain replica \code{test}.
+%
+Finally, the command \code{AM-commit} compares the local file with the chain
+replica file calling \code{AM-diff}, and then posts the \emph{diffs} back into
+the chain.
 
-facade is an object that serves as a front-facing interface masking more complex underlying or structural code. A facade can:
+\subsection{Putting It All Together}
+
+We now illustrate how to combine Freechains and \AMT to XXX:
+
+{\footnotesize
+\begin{verbatim}
+$ fc keys pubpvt "my-passwd"                                    : 01
+<pub> <pvt>                                                     : 02
+$ fc chains join "#test" <pub>                                  : 03
+$ AM-rw "test.am" init                                          : 04
+$ AM-rw "test.am" write object ins "title" string "Test File"   : 05
+$ AM-commit "#test" --sign=<pvt>                                : 06
+$ fc peer <ip> sync '#test'                                     : 07
+$ AM-checkout "#test" --sign=<pvt>                              : 08
+$ AM-rw "test.am" read                                          : 09
+{title: 'Test File', date: 'July 2023'}                         : 10
+\end{verbatim}
+}
 
 \bibliographystyle{abbrv}
 \bibliography{amtools}
