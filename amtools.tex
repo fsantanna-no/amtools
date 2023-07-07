@@ -91,16 +91,18 @@ Currently, most practical collaborative systems rely on centralized authorities
 to ensure data consistency and correctness.
 However, centralized authorities concentrate too much power, since they control
 data ownership and service availability~\cite{pincheira2022decentralized}.
+
 As an emerging alternative, P2P systems~\cite{androutsellis2004survey} aim to
 decentralize control, such that applications grow organically with new
 users~\cite{rodrigues2010peer}, who contribute with storage, availability, and
 also, in our context, with moderation of the datasets.
-
+%
 However, P2P systems strive to ensure data consistency and correctness,
 particularly in the presence of malicious users or
 Sybils~\cite{douceur2002sybil}.
 For instance, malicious users may abuse the system by vandalizing datasets with
 SPAM or hate speech.
+
 By consistency, we mean that all replicas reach the same state, while by
 correctness, we mean that such consistent state must also be immune to
 vandalism (integrity) and preserve the users intent
@@ -115,6 +117,19 @@ protocol with a consensus mechanism.
 Automerge~\cite{p2p.automerge} provides JSON data structures as
 CRDTs~\cite{p2p.crdts}, such that they can be read and written concurrently
 without conflicts.
+Nevertheless, CRDTs are still subject to corner cases, such as simultaneous
+editions of the very same part of datasets.
+In addition, CRDTs are not themselves immune to malicious users and Sybils,
+which might vandalize datasets with no restrictions, thus affecting their
+integrity.
+%In such cases, a consensus mechanism might still be necessary to preserve data
+%integrity.
+
+\begin{comment}
+As a partial solution to preserve integrity, permissioned P2P systems opt for a
+centralized authority to grant membership to new users.
+Examples of permissioned P2P networks include Ripple~\cite{schwartz2014ripple}
+and Hyperledger Fabric~\cite{androulaki2018hyperledger}.
 %
 Freechains~\cite{fcs.sbseg20} provides a reputation mechanism that
 moderates content through likes and dislikes and, at the same time, delivers
@@ -135,7 +150,7 @@ In this sense \AMT resembles a distributed version control system (DVCS), but
 with a consensus mechanism to merge conflicting editions while
 preserving data correctness.
 
-\AMT is composed of 3 utilities:
+\AMT is composed of 3 utility sets:
     \amrw,
     \amdiff \& \ampatch, and
     \amcheckout \& \amcommit.
@@ -220,12 +235,12 @@ objects cannot be manipulated directly in JavaScript.
 Instead, \code{AM.change} receives a function argument to manipulate
 the given object with tracking enabled.
 
-Regarding \AMT,
+Regarding the integration with \AMT,
     \code{AM.init} and \code{AM.change} are the basis of \amrw;
     \code{AM.getChanges}, \code{AM.applyChanges}, and \code{AM.getConflicts}
     are the basis of \amdiff \& \ampatch; and
-    \code{AM.save} and \code{AM.load} are used for persistence in
-    \amcheckout \& \amcommit.
+    \code{AM.save} and \code{AM.load} are used for persistence, particularly in
+    the blockchain with \amcheckout \& \amcommit.
 
 The next example simulates two peers \code{A} and \code{B} manipulating a
 JSON concurrently to reach the final state \code{\{list:~['A','B']\}}:
@@ -477,7 +492,7 @@ integrity abuse and corner-case inaccuracies.
 On the other hand, Freechains can resist malicious peers and order conflicting
 corner cases, but does not support structured datasets with merging policies.
 
-As described in the Introduction, \AMT is composed of 3 utilities:
+As described in the Introduction, \AMT is composed of 3 utility sets:
     \amrw,
     \amdiff \& \ampatch, and
     \amcheckout \& \amcommit.
