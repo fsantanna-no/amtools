@@ -19,11 +19,11 @@
 \newcommand{\Xoo} {$1{\leftrightarrow}1$\xspace}
 \newcommand{\Xo}  {$1{\hookleftarrow}$\xspace}
 
-\newcommand{\amrw}       {\texttt{AM-rw}\xspace}
-\newcommand{\amdiff}     {\texttt{AM-diff}\xspace}
-\newcommand{\ampatch}    {\texttt{AM-patch}\xspace}
-\newcommand{\amcheckout} {\texttt{AM-checkout}\xspace}
-\newcommand{\amcommit}   {\texttt{AM-commit}\xspace}
+\newcommand{\amrw}       {\code{AM-rw}\xspace}
+\newcommand{\amdiff}     {\code{AM-diff}\xspace}
+\newcommand{\ampatch}    {\code{AM-patch}\xspace}
+\newcommand{\amcheckout} {\code{AM-checkout}\xspace}
+\newcommand{\amcommit}   {\code{AM-commit}\xspace}
 
 \renewcommand{\theenumi}{\alph{enumi}}
 
@@ -32,7 +32,7 @@
 \sloppy
 
 \title{
-    \AMT - Operating Permissionless JSON Datasets
+    \AMT: Operating Permissionless JSON Datasets
 }
 
 \author{Anonymous}
@@ -57,8 +57,8 @@ Networked collaborative applications, such as Google Docs and Github, allow
 users to work together concurrently.
 These applications rely on distributed datasets, such as documents and code,
 which users expect to see and share in a consistent way.
-However, most practical collaborative systems rely on centralized authorities
-to ensure data consistency and correctness.
+However, most practical systems rely on centralized authorities to ensure data
+consistency and correctness.
 %
 In this work, we propose \AMT, a set of tools to manipulate JSON datasets in a
 permissionless P2P environment in which users participate in a consensus
@@ -67,9 +67,8 @@ mechanism to ensure consistency and correctness.
 \AMT reconcile Automerge, a JSON-based CRDT, with Freechains, a blockchain with
 a reputation mechanism to moderate content.
 %
-\AMT resembles a distributed version control system (DVCS), but with a
-consensus mechanism to merge conflicting editions while preserving data
-correctness.
+\AMT resembles a distributed version control system, but with a consensus
+mechanism to merge conflicting editions while preserving data correctness.
 \end{abstract}
 
 \section{Introduction}
@@ -81,11 +80,11 @@ Examples of collaborative applications include Google Docs, Github and
 Wikipedia.
 %
 These applications rely on distributed datasets, such as documents and code,
-which are read, written, stored, and synchronized through the network.
-In this work, we use generic JSON files to represent datasets, given that they
-are human readable and widely adopted as an interchange format.
-Users expect to see and share these JSON datasets in a consistent way, even if
-their machines synchronize sporadically and at different times.
+which users read, write, store, and synchronize through the network.
+In this work, we adopt JSON to represent generic datasets, given that it is
+human readable and widely adopted as an interchange format.
+Users expect to see and share JSON datasets in a consistent way, even if their
+machines synchronize sporadically and at different times.
 
 Currently, most practical collaborative systems rely on centralized authorities
 to ensure data consistency and correctness.
@@ -100,31 +99,29 @@ datasets.
 However, P2P systems strive to ensure data consistency and correctness,
 particularly in the presence of malicious users or
 Sybils~\cite{douceur2002sybil}.
-For instance, malicious users may abuse the system by vandalizing datasets with
-SPAM or hate speech.
+For instance, malicious users may abuse the system with SPAM or hate speech.
 
-By consistency, we mean that all replicas reach the same state, while by
-correctness, we mean that such consistent state must also be immune to
-vandalism (integrity) and preserve the users intent
+By consistency, we mean that all replicas reach the same state.
+By correctness, we mean that such consistent state must also be immune to
+vandalism (integrity) and must preserve the users intent
 (accuracy)~\cite{litt2022peritext}.
 Integrity and accuracy inevitably depend on the subjective judgement of users,
 which we refer as \emph{subjective correctness}.
 
-In this work, we propose \AMT, a set of tools that reconciles \emph{Automerge},
-a JSON conflict-free replicated data type (CRDT), with \emph{Freechains}, a P2P
-protocol with a consensus mechanism.
+In this work we propose \AMT, a set of tools that reconciles
+\emph{Automerge}~\cite{p2p.automerge} and \emph{Freechains}~\cite{fcs.sbseg20}
+to provide consistency, integrity, and accuracy for decentralized collaborative
+systems.
 %
-Automerge~\cite{p2p.automerge} provides JSON data structures as
-CRDTs~\cite{p2p.crdts}, such that they can be read and written concurrently
-without conflicts.
+Automerge is a JSON CRDT (conflict-free replicated data type~\cite{p2p.crdts})
+in which datasets can be read and written concurrently with automatic merges.
 %
-Freechains~\cite{fcs.sbseg20} provides a reputation mechanism that
-moderates content through likes and dislikes and, at the same time, delivers
-network consensus.
+Freechains is a P2P protocol in which users moderate content through likes and
+dislikes to determine network consensus.
 %
-Therefore, Automerge editions can be ordered by the Freechains reputation
-mechanism to preserve data accuracy.
-In addition, further moderation can revert priorities or remove abusive or
+Our main idea with \AMT is to order Automerge editions with the consensus
+mechanism of Freechains to preserve data accuracy.
+In addition, content moderation can also revert priorities or remove abusive or
 malicious editions, thus preserving integrity.
 %
 A dataset is structured as Automerge JSON file stored on Freechains.
@@ -133,26 +130,21 @@ JSON.
 The list is traversed from the beginning in consensus order to recreate the
 file as a complete JSON.
 %
-In this sense \AMT resembles a distributed version control system (DVCS), but
-with a consensus mechanism to merge conflicting editions while
-preserving data correctness.
+In this sense, \AMT resembles a distributed version control system, but with a
+consensus mechanism to merge conflicting editions while preserving subjective
+correctness.
 
 \AMT is composed of 3 utility sets:
-    \amrw,
-    \amdiff \& \ampatch, and
-    \amcheckout \& \amcommit.
-%
-\amrw allows to read and write portions of a JSON file.
+\amrw allows to read and write portions of JSON files.
 \amdiff \& \ampatch obtain and apply differences between JSON files.
-\amcheckout \& \amcommit read and write a JSON file to its corresponding
-blockchain.
+\amcheckout \& \amcommit persist JSON files to their corresponding blockchain.
 
 The rest of this paper is organized as follows.
 Sections~\ref{sec.automerge}~and~\ref{sec.freechains} describe the basic
 functionality of Automerge and Freechains as separate tools, highlighting how
 they form the basis of \AMT.
 Section~\ref{sec.amtools} describes \AMT and how it combines Automerge and
-Freechains to support safe concurrent JSON editing in a permissionless P2P
+Freechains to preserve subjective correctness in a permissionless P2P
 environment.
 
 \section{Automerge}
@@ -162,21 +154,21 @@ Automerge~\cite{p2p.automerge} is an open-source library that provides
 CRDT-based JSON datasets to build collaborative applications.
 %
 Automerge is designed for \emph{local-first software}~\cite{p2p.local} which,
-unlike cloud-based software, stores and operates the datasets locally, such
-that applications can work normally while offline.
+unlike cloud-based software, stores and operates datasets locally, such that
+applications can work normally while offline.
 %
 Therefore, users can make concurrent changes to a shared JSON without
-centralized coordination:
-When users synchronize, Automerge ensures that changes are merged automatically
-in a principled manner.
+centralized coordination.
+When users eventually synchronize, Automerge ensures that changes are merged
+automatically in a principled manner.
 %
-More specifically, Automerge is an operation-based CRDT
-(CmRDT~\cite{p2p.crdts}) that models JSON datasets as append-only logs of
-concurrent commutative modifications, such as the insertion or removal of list
-elements~\cite{p2p.automerge}.
+%More specifically, Automerge is an operation-based CRDT
+%(CmRDT~\cite{p2p.crdts}) that models JSON datasets as append-only logs of
+%concurrent commutative modifications, such as the insertion or removal of list
+%elements~\cite{p2p.automerge}.
 %
-When users synchronize, these logs are merged to reach the exactly same state
-according to the eventual consistency model~\cite{p2p.sec}.
+%When users synchronize, these logs are merged to reach the exactly same state
+%according to the eventual consistency model~\cite{p2p.sec}.
 
 The basic JavaScript API of Automerge is as follows:
 
@@ -201,11 +193,11 @@ The basic JavaScript API of Automerge is as follows:
     Converts a byte array \code{bin} into object \code{obj}.
 \end{itemize}
 
-Note that the basic API of Automerge is network agnostic and does not provide
-a mechanism to synchronize objects, requiring extra libraries for this purpose.
+Note that the basic API of Automerge does not synchronize objects natively,
+requiring extra libraries for this purpose.
 %
-This apparent limitation matches our intention to adopt Freechains as a
-transport and storage layer with global consensus.
+Nevertheless, this apparent limitation matches our intention to adopt
+Freechains as a transport and storage layer with global consensus.
 
 The API usage is straightforward:
     initialize a dataset with \code{AM.init},
@@ -215,17 +207,25 @@ The API usage is straightforward:
     apply remote changes with \code{AM.applyChanges},
     check conflicts with \code{AM.getConflicts},
     persist locally with \code{AM.save} and \code{AM.load}.
-Except for function \code{AM.change}, the other functions are straightforward.
 %
-Because Automerge is a CmRDT and must keep track of all operations, JSON
-objects cannot be manipulated directly in JavaScript.
+Except for function \code{AM.change} and \code{AM.getConflicts}, the other
+functions are straightforward.
+%
+About \code{AM.change}, because Automerge and must keep track of all
+operations, JSON objects cannot be manipulated directly in JavaScript.
 Instead, \code{AM.change} receives a function argument to manipulate
 the given object with tracking enabled.
+%
+About \code{AM.getConflicts}, even though Automerge resolves conflicts
+automatically, it is still subject to corner cases~\cite{p2p.automerge}.
+In these situations, Automerge may not preserve accuracy and takes an arbitrary
+choice, but still provides \code{AM.getConflicts} as a fallback mechanism.
 
 Regarding the integration with \AMT,
     \code{AM.init} and \code{AM.change} are the basis of \amrw;
-    \code{AM.getChanges}, \code{AM.applyChanges}, and \code{AM.getConflicts}
-    are the basis of \amdiff \& \ampatch; and
+    \code{AM.getChanges} and \code{AM.applyChanges} are the basis of \amdiff
+        \& \ampatch;
+    \code{AM.getConflicts} identifies conflicts during \amcheckout; and
     \code{AM.save} and \code{AM.load} are used for persistence, particularly in
     the blockchain with \amcheckout \& \amcommit.
 
@@ -276,16 +276,16 @@ Peers \code{A} and \code{B} initialize a new JSON independently (\code{A1} and
 \code{B1}).
 Then, peer \code{A} adds an empty list (\code{A2}), computes the difference
 (\code{X0}), and synchronizes it with peer \code{B} (\code{B2}).
-Then, both peers push values to the list concurrently (\code{A3} and
+Then, both peers push values into the list concurrently (\code{A3} and
 \code{B3}), and synchronize the differences (\code{XA} and \code{XB}), which
-are applied in the other sides (\code{A4} and \code{B4}).
+are applied in the opposite sides (\code{A4} and \code{B4}).
 Automerge ensures that the final states \code{A4} and \code{B4} are exactly the
 same, with the list containing both values \code{'A'} and \code{'B'}.
 However, since the editions are concurrent, the final list may become either
 \code{['A','B']} or \code{['B','A']}, depending on arbitrary criteria such as
-peer identity or timestamp.
-Nevertheless, regardless of the order, the users intent to push two values into
-the list is preserved.
+peer identity.
+Regardless of the order, the users intent to push two values into the list is
+preserved.
 
 Now, suppose that instead of calls to \code{json.list.push}, the peers set the
 lists directly as \code{json.list=['A']} and \code{json.list=['B']}.
@@ -320,8 +320,7 @@ same chain eventually receive the messages.
 %
 Each chain behaves as an independent blockchain with an innovative reputation
 mechanism that moderates content through likes and dislikes and, at the same
-time, delivers consensus such that all users observe the exact same order of
-messages.
+time, guarantees consensus in the order of messages.
 %
 Figure~\ref{fig.general} summarizes the general reputation rules, in which
 users can spend tokens named \emph{reps} to post and rate content in the
@@ -346,8 +345,8 @@ The basic command-line API of Freechains is as follows:
     Posts a message to a chain.
 \item \code{fc chain get ...} \\
     Reads a post from a chain.
-\item \code{fc chain like ...} \\
-    Likes (or dislikes) a post in the chain.
+\item \code{fc chain (like|dislike) ...} \\
+    Likes or dislikes a post in the chain.
 \item \code{fc chain consensus ...} \\
     Shows all posts from a chain in consensus order.
 \item \code{fc peer sync ...} \\
@@ -366,8 +365,8 @@ same arguments such that they are compatible when synchronizing.
 Once a chain is created, users can call \code{fc~chain~get} and
 \code{fc~chain~post} to read and write messages.
 %
-A chain can be traversed in order through \code{fc~chain~consensus}, which
-enumerates all post ids, which can be read through \code{fc~chain~get}.
+A chain can be traversed in total order through \code{fc~chain~consensus},
+which enumerates all post ids, which can be read through \code{fc~chain~get}.
 %
 Finally, \code{fc~peer~sync} exchanges missing posts between replicas.
 
@@ -435,13 +434,18 @@ After the users synchronize with \code{peer~sync}, the posts are exchanged and
 the chain reaches the state of Figure~\ref{fig.dag}.
 The chain fork represented in the DAG suggests that only a partial order of
 posts is possible.
-Nevertheless, the call to \code{chain~consensus} always returns the same order
-of posts \code{msg-A~-->~msg-B} in both sides.
+Nevertheless, the call to \code{chain~consensus} is guaranteed to always
+return the same order of posts \code{msg-A~-->~msg-B} in both sides.
 
 The consensus algorithm of Freechains provides a total order of posts, even in
 the presence of forks.
 Freechains employs a topological sorting algorithm to favor reputation when
-deciding between branches in a chain DAG.
+deciding between branches in a chain DAG~\cite{fcs.sbseg20}.
+%
+In Figure~\ref{fig.dag}, user \code{A} has more reputation in the common
+prefix, therefore, the branch at the top must be ordered first.
+
+\begin{comment}
 The algorithm works as follows~\cite{fcs.sbseg20}:
 \begin{itemize}
 \item
@@ -460,6 +464,7 @@ The algorithm works as follows~\cite{fcs.sbseg20}:
     In Figure~\ref{fig.dag}, user \code{A} had more reputation in the common
     prefix, therefore, the branch at the top is ordered first.
 \end{itemize}
+\end{comment}
 
 Even though Freechains provide means to preserve integrity and accuracy, it
 does not support structured datasets with attached semantics, since it
@@ -472,22 +477,17 @@ represents content as a simple linked list of binary blobs stored in chains.
 manipulate JSON datasets in permissionless networks, while preserving
 consistency, integrity, and accuracy:
 %
-On the one hand, Automerge supports decentralized high-level structured JSON
-datasets with fine-grained merging policies, but which are still subject to
-integrity abuse and corner-case inaccuracies.
+On the one hand, Automerge supports decentralized structured JSON datasets with
+fine-grained merging policies, but which are still subject to integrity abuse
+and corner-case inaccuracies.
 %
-On the other hand, Freechains can resist malicious peers and order conflicting
-corner cases, but does not support structured datasets with merging policies.
+On the other hand, Freechains resists malicious peers and guarantees a total
+order of editions, but does not support datasets with automatic merges.
 
 As described in the Introduction, \AMT is composed of 3 utility sets:
-    \amrw,
-    \amdiff \& \ampatch, and
-    \amcheckout \& \amcommit.
-%
-\amrw allows to read and write portions of a JSON file.
+\amrw allows to read and write portions of JSON files.
 \amdiff \& \ampatch obtain and apply differences between JSON files.
-\amcheckout \& \amcommit read and write a JSON file to its corresponding
-blockchain.
+\amcheckout \& \amcommit persist JSON files to their corresponding blockchain.
 
 \subsection{\amrw: JSON Command-Line Editor}
 
@@ -496,8 +496,8 @@ blockchain.
     \footnote{\amrw: \url{https://github.com/<hidden-anonymous>}}
 is a facade to hide the complexity of \code{AM.change}, and also provides a
 uniform syntax to manipulate JSON files.
-Recall from Section~\ref{sec.automerge} that, because CmRDTs need to keep
-track of all operations, JSON files cannot be edited directly.
+Recall from Section~\ref{sec.automerge} that, because CRDTs need track all
+operations, JSON files cannot be edited directly.
 
 The basic command-line API of \amrw is as follows:
 
@@ -508,12 +508,11 @@ The basic command-line API of \amrw is as follows:
     Reads a value from or writes to a JSON file (based on \code{AM.change}).
     A \code{<path>...} is a sequence of field or index accesses to navigate the
     JSON.
-    A \code{write <op>} can insert, set, or remove a field or index from the
+    A \code{write <op>} can insert, set, or remove a field or index in the
     JSON.
 \end{itemize}
 
-The next example initializes and writes to a JSON to reach the final state
-{list: ['A','B']}:
+The next example writes to a JSON to reach the final state {list: ['A','B']}:
 
 {\footnotesize
 \begin{verbatim}
@@ -528,8 +527,8 @@ $ AM-rw "test.am" read
 
 In the first write, we use an empty path, which navigates to the root object,
 in which we add a field \code{list} as an empty array.
-The writes in sequence navigate to the array in field \code{list}, and insert
-strings \code{A} and \code{B}.
+The writes in sequence navigate to the array field \code{list}, and insert
+strings \code{'A'} and \code{'B'}.
 
 Even though \amrw is more verbose in comparison to Automerge's
 \code{AM.change}, it provides a uniform syntax to manipulate JSON files.
@@ -541,7 +540,7 @@ even by non programmers.
 \amdiff \& \ampatch%
     %\footnote{\ampatch: \url{https://github.com/fabiobosisio/ampatch}}
     \footnote{\amdiff \& \ampatch: \url{https://github.com/<hidden-anonymous>}}
-are counterparts to textual \emph{diff \& patch} UNIX tools, but for
+are counterparts to textual \emph{diff \& patch} UNIX tools, but which work on
 Automerge's JSON internal format.
 
 The basic command-line API of \amdiff \& \ampatch is as follows:
@@ -564,25 +563,25 @@ $ AM-patch "old.am" "old-new.diff" > "rec.am"
 \end{verbatim}
 }
 
-At the end, \code{new.am} and \code{rec.am} must be equal files.
+At the end, \code{new.am} and \code{rec.am} are guaranteed to be equal files.
 
-Just like standard version control systems (VCSs), the idea is that storing
+Just like standard version control systems, the idea is that storing
 \emph{diffs} to recreate the full history of a given file history is more
 efficient than storing all individual versions of that file.
-
-With \AMT, we support a permissionless environment built on top of Freechains
-to store these file \emph{diffs}, which users can rate and possibly revoke,
-affecting the consensus order to recreate the file history.
+%
+With \AMT, we rely on Freechains to store these \emph{diffs}, which users can
+rate and possibly revoke, affecting the consensus order that recreates the file
+history.
 
 \subsection{\amcheckout \& \amcommit}
 
-The final piece of \AMT is to synchronize JSON files between replicas
-and then update local versions based on the global consensus.
+The final piece of \AMT is to synchronize JSON \emph{diffs} between replicas
+and then update local versions of files based on the global consensus.
 
 \amcheckout \& \amcommit%
     %\footnote{\amcheckout \& \amcommit: \url{https://github.com/fabiobosisio/ampatch}}
     \footnote{\amcheckout \& \amcommit: \url{https://github.com/<hidden-anonymous>}}
-are counterparts to standard \emph{checkout \& commit} VCS tools, but that use
+are counterparts to standard \emph{checkout \& commit} VCS tools, but which use
 Freechains for persistence, conflict resolution, and synchronization.
 
 The basic command-line API of \amcheckout \& \amcommit is as follows:
@@ -601,7 +600,7 @@ commit it back into the chain:
 \begin{verbatim}
 $ AM-checkout "test"
 $ AM-rw "test.am" field "list" write array ins 2 string "C"
-$ AM-commit "test"
+$ AM-commit "test" --sign=<pvt>
 \end{verbatim}
 }
 
@@ -620,6 +619,11 @@ Finally, the command \code{AM-commit} compares the local file with the chain
 replica file calling \code{AM-diff}, and then posts the \emph{diffs} back into
 the chain.
 
+`TODO: sign reputation`
+
+`TODO: conflict`
+
+\begin{comment}
 \subsection{Putting It All Together}
 
 We now illustrate how to combine Freechains and \AMT to XXX:
@@ -638,6 +642,7 @@ $ AM-rw "test.am" read                                          : 09
 {title: 'Test File', date: 'July 2023'}                         : 10
 \end{verbatim}
 }
+\end{comment}
 
 \bibliographystyle{abbrv}
 \bibliography{amtools}
