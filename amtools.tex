@@ -19,6 +19,7 @@
 \newcommand{\Xoo} {$1{\leftrightarrow}1$\xspace}
 \newcommand{\Xo}  {$1{\hookleftarrow}$\xspace}
 
+
 \newcommand{\amrw}       {\code{AM-rw}\xspace}
 \newcommand{\amdiff}     {\code{AM-diff}\xspace}
 \newcommand{\ampatch}    {\code{AM-patch}\xspace}
@@ -67,7 +68,7 @@ mechanism to ensure consistency and correctness.
 \AMT reconcile Automerge, a JSON-based CRDT, with Freechains, a blockchain with
 a reputation mechanism to moderate content.
 %
-\AMT resembles a distributed version control system, but with a consensus
+\AMT resembles a decentralized version control system, but with a consensus
 mechanism to merge conflicting editions while preserving data correctness.
 \end{abstract}
 
@@ -130,8 +131,8 @@ JSON.
 The list is traversed from the beginning in consensus order to recreate the
 file as a complete JSON.
 %
-In this sense, \AMT resembles a distributed version control system, but with a
-consensus mechanism to merge conflicting editions while preserving subjective
+In this sense, \AMT resembles a decentralized version control system, but with
+a consensus mechanism to merge conflicting editions while preserving subjective
 correctness.
 
 \AMT is composed of 3 utility sets:
@@ -223,9 +224,8 @@ choice, but still provides \code{AM.getConflicts} as a fallback mechanism.
 
 Regarding the integration with \AMT,
     \code{AM.init} and \code{AM.change} are the basis of \amrw;
-    \code{AM.getChanges} and \code{AM.applyChanges} are the basis of \amdiff
-        \& \ampatch;
-    \code{AM.getConflicts} identifies conflicts during \amcheckout; and
+    \code{AM.getChanges}, \code{AM.applyChanges}, and \code{AM.getConflicts}
+    are the basis of \amdiff \& \ampatch; and
     \code{AM.save} and \code{AM.load} are used for persistence, particularly in
     the blockchain with \amcheckout \& \amcommit.
 
@@ -607,21 +607,62 @@ $ AM-commit "test" --sign=<pvt>
 The synchronization between replicas must be done in pairs through
 \code{fc~peer~sync}, as described in Section~\ref{sec.freechains}.
 %
-The command \code{AM-checkout} traverses the chain replica \code{test},
-starting from its genesis block holding the initial JSON, and then calling
-\code{AM-patch}, in consensus order, for each block holding the \emph{diffs}.
+The command \amcheckout traverses the chain replica \code{test}, starting from
+its genesis block holding the initial JSON, and then calling \ampatch, in
+consensus order, for each block holding the \emph{diffs}.
 The result is the local file \code{test.am} with the most recent JSON.
 %
-The command \code{AM-rw} makes local modifications to \code{test.am}, but which
-do not affect the chain replica \code{test}.
+The command \amrw makes local modifications to \code{test.am}, but which do not
+affect the chain replica \code{test}.
 %
-Finally, the command \code{AM-commit} compares the local file with the chain
-replica file calling \code{AM-diff}, and then posts the \emph{diffs} back into
-the chain.
+Finally, the command \amcommit compares the local file with the chain replica
+file calling \amdiff, and then posts the \emph{diffs} back into the chain.
 
-`TODO: sign reputation`
+Commits must be signed because of the reputation system of Freechains, which
+preserves the repository integrity and accuracy.
+For instance, commits from authors with no reputation, such as Sybils trying to
+SPAM the repository are rejected by default, since they require welcoming likes
+from existing users in the chain~\cite{fcs.sbseg20}.
+Likewise, malicious commits from existing users can be revoked a posteriori
+with dislikes from other users with more reputation.
 
-`TODO: conflict`
+\begin{wrapfigure}{R}{0.6\textwidth}
+    \includegraphics[width=0.6\textwidth]{conflicts.png}
+    \caption{Conflict resolution in \AMT.}
+    \label{fig.conflicts}
+\end{wrapfigure}
+
+As discussed in Section~\ref{sec.automerge}, not all complications in
+repositories are due to Sybils or malicious editions.
+\AMT inherits the local-first nature of Automerge and Freechains in which
+concurrent commits with irreconcilable conflicts are inevitable.
+%
+Therefore, our main contribution with \AMT is on how to merge conflicting
+branches automatically to reach a final version that reflects the intent of the
+majority of the network.
+
+Figure~\ref{fig.conflicts} illustrates a legitimate scenario that cannot
+preserve the intent of both branches at the same time.
+Each node in the DAG is a \emph{diff} that represents a JSON edition (e.g.,
+\code{A1} and \code{Q2}).
+\AMT recreates the file by applying the \emph{diffs} in consensus order.
+Based on the common prefix, the consensus guarantees that all patches from the
+top branch are applied successfully, thus satisfying the intent of the majority
+of the network.
+Nevertheless, the \emph{diffs} of the minority of the network are also applied
+in sequence and may or may not succeed.
+In the example, there is a merge conflict when trying to apply \code{Q2}, which
+is identified by \amcheckout based on \ampatch through \code{AM.getConflicts}.
+%
+In such situations, \amcheckout ignores all remaining \emph{diffs} because they
+can no longer be merged automatically.
+In addition, \amcommit ensures that further \emph{diffs} such as \code{X4} are
+linked 
+
+
+In summary, \AMT reconciles Automerge and Freechains to provide a decentralized
+version control system that preserves consistency, integrity, and accuracy even
+in the presence of Sybils and malicious users.
 
 \begin{comment}
 \subsection{Putting It All Together}
