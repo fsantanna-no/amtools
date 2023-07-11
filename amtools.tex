@@ -633,9 +633,9 @@ with dislikes from other users with more reputation.
 \end{wrapfigure}
 
 As discussed in Section~\ref{sec.automerge}, not all complications in
-repositories are due to Sybils or malicious editions.
+repositories are due to Sybils or malicious editions:
 \AMT inherits the local-first nature of Automerge and Freechains in which
-concurrent commits with irreconcilable conflicts are inevitable.
+with irreconcilable conflicts are inevitable.
 %
 Therefore, our main contribution with \AMT is on how to merge conflicting
 branches automatically to reach a final version that reflects the intent of the
@@ -643,26 +643,28 @@ majority of the network.
 
 Figure~\ref{fig.conflicts} illustrates a legitimate scenario that cannot
 preserve the intent of both branches at the same time.
-Each node in the DAG is a \emph{diff} that represents a JSON edition (e.g.,
+Each node in the main DAG is a \emph{diff} holding a JSON edition (e.g.,
 \code{A1} and \code{Q2}).
 \AMT recreates the file by applying the \emph{diffs} in consensus order.
-Based on the common prefix, the consensus guarantees that all patches from the
-top branch are applied successfully, thus satisfying the intent of the majority
-of the network.
-Nevertheless, the \emph{diffs} of the minority of the network are also applied
-in sequence and may or may not succeed.
-In the example, there is a merge conflict when trying to apply \code{Q2}, which
-is identified by \amcheckout based on \ampatch through \code{AM.getConflicts}.
+Based on the common prefix, the consensus guarantees that all patches in the
+top branch applies successfully, thus satisfying the intent of the majority of
+the network.
+Nevertheless, as a best effort policy, the \emph{diffs} in the bottom branch,
+are also applied in sequence, but may or may not succeed.
+In the example, there is a merge conflict only when trying to apply \code{Q2},
+which is identified by \amcheckout based on \ampatch through
+\code{AM.getConflicts}.
 %
 In such situations, \amcheckout ignores all remaining \emph{diffs} because they
-can no longer be merged automatically.
+can no longer reach a consistent state without human intervention.
 In addition, \amcommit ensures that further \emph{diffs} such as \code{X4} are
-linked 
-
+linked back only to succeeded patches (i.e., \code{B3} and \code{P1}),
+effectively merging the branches and ensuring that the file remains in a
+consistent state automatically.
 
 In summary, \AMT reconciles Automerge and Freechains to provide a decentralized
-version control system that preserves consistency, integrity, and accuracy even
-in the presence of Sybils and malicious users.
+version control system with automatic merges that preserves consistency,
+integrity, and accuracy, even in the presence of Sybils and malicious users.
 
 \begin{comment}
 \subsection{Putting It All Together}
