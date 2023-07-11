@@ -54,10 +54,10 @@
 \maketitle
 
 \begin{abstract}
-Networked collaborative applications, such as Google Docs and Github, allow
-users to work together concurrently.
-These applications rely on distributed datasets, such as documents and code,
-which users expect to see and share in a consistent way.
+Collaborative applications, such as Google Docs and Github, allow users to work
+together concurrently.
+They rely on distributed datasets, such as documents and code, which users
+expect to see and share in a consistent way.
 However, most practical systems rely on centralized authorities to ensure data
 consistency and correctness.
 %
@@ -76,7 +76,7 @@ mechanism to merge conflicting editions while preserving data correctness.
 \label{sec.introduction}
 
 Networked collaborative applications allow remote users to share projects while
-working together concurrently \cite{wu2010partial}.
+working together concurrently.
 Examples of collaborative applications include Google Docs, Github and
 Wikipedia.
 %
@@ -170,7 +170,7 @@ automatically in a principled manner.
 %
 %When users synchronize, these logs are merged to reach the exactly same state
 %according to the eventual consistency model~\cite{p2p.sec}.
-
+%
 The basic JavaScript API of Automerge is as follows:
 
 \begin{itemize}
@@ -333,7 +333,7 @@ The reputation mechanism of Freechains works towards our goal of subjective
 correctness in \AMT as follows:
     dislikes can revoke abusive and malicious posts, thus preserving integrity;
     likes can favor posts with more quality, thus preserving accuracy.
-
+%
 The basic command-line API of Freechains is as follows:
 
 \begin{itemize}
@@ -494,11 +494,11 @@ As described in the Introduction, \AMT is composed of 3 utility sets:
 \amrw%
     %\footnote{\amrw: \url{https://github.com/fabiobosisio/amrw}}
     \footnote{\amrw: \url{https://github.com/<hidden-anonymous>}}
-is a facade to hide the complexity of \code{AM.change}, and also provides a
-uniform syntax to manipulate JSON files.
+hides the complexity of \code{AM.change}, and also provides a uniform syntax to
+manipulate JSON files.
 Recall from Section~\ref{sec.automerge} that, because CRDTs need track all
 operations, JSON files cannot be edited directly.
-
+%
 The basic command-line API of \amrw is as follows:
 
 \begin{itemize}
@@ -542,7 +542,7 @@ even by non programmers.
     \footnote{\amdiff \& \ampatch: \url{https://github.com/<hidden-anonymous>}}
 are counterparts to textual \emph{diff \& patch} UNIX tools, but which work on
 Automerge's JSON internal format.
-
+%
 The basic command-line API of \amdiff \& \ampatch is as follows:
 
 \begin{itemize}
@@ -552,9 +552,9 @@ The basic command-line API of \amdiff \& \ampatch is as follows:
     Applies the patch to the given file.
 \end{itemize}
 
-The next example illustrates how to extract the differences between an old and
-a new file, and then recreate the new file by applying the obtained difference
-into the old file:
+The next example extracts the differences between an old and a new file, and
+then recreate the new file by applying the obtained difference into the old
+file:
 
 {\footnotesize
 \begin{verbatim}
@@ -583,7 +583,7 @@ and then update local versions of files based on the global consensus.
     \footnote{\amcheckout \& \amcommit: \url{https://github.com/<hidden-anonymous>}}
 are counterparts to standard \emph{checkout \& commit} VCS tools, but which use
 Freechains for persistence, conflict resolution, and synchronization.
-
+%
 The basic command-line API of \amcheckout \& \amcommit is as follows:
 
 \begin{itemize}
@@ -618,8 +618,8 @@ affect the chain replica \code{test}.
 Finally, the command \amcommit compares the local file with the chain replica
 file calling \amdiff, and then posts the \emph{diffs} back into the chain.
 
-Commits must be signed because of the reputation system of Freechains, which
-preserves the repository integrity and accuracy.
+Commits must be signed in order to preserve the integrity and accuracy of the
+repository.
 For instance, commits from authors with no reputation, such as Sybils trying to
 SPAM the repository are rejected by default, since they require welcoming likes
 from existing users in the chain~\cite{fcs.sbseg20}.
